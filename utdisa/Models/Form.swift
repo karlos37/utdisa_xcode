@@ -1,20 +1,79 @@
 import Foundation
 
 struct AirportPickupForm {
-    var fullName: String = ""
+    // Basic Information
     var email: String = ""
-    var phone: String = ""
+    var utdId: String = ""
+    var utdEmail: String = ""
+    var firstName: String = ""
+    var lastName: String = ""
+    var whatsappNumber: String = ""
+    var gender: Gender = .preferNotToSay
+    var emergencyContact: String = ""
+    
+    // Student Verification
+    var isSpring25Student: Bool = false
+    var acceptanceLetterImageURL: String = ""
+    var studentPhotoURL: String = ""
+    
+    // Flight Details
     var flightNumber: String = ""
     var arrivalDate: Date = Date()
     var arrivalTime: Date = Date()
-    var numberOfBags: Int = 1
-    var additionalNotes: String = ""
+    var arrivalAirport: DallasAirport = .dfw
+    var portOfEntryAirport: String = ""
+    var itineraryImageURL: String = ""
+    
+    // Baggage Information
+    var checkInBagsCount: Int = 1
+    var cabinBagsCount: Int = 1
+    
+    // Location
+    var dropOffLocation: String = ""
+    
+    // Terms and Conditions
+    var agreesToTerms: Bool = false
+    var agreesToWaiver: Bool = false
+    
+    enum Gender: String, CaseIterable {
+        case male = "Male"
+        case female = "Female"
+        case preferNotToSay = "Prefer not to say"
+    }
+    
+    enum DallasAirport: String, CaseIterable {
+        case dfw = "Dallas/Fort Worth International Airport (DFW)"
+        case dal = "Dallas Love Field Airport (DAL)"
+    }
     
     var isValid: Bool {
-        !fullName.isEmpty &&
         !email.isEmpty &&
-        !phone.isEmpty &&
-        !flightNumber.isEmpty
+        !utdId.isEmpty &&
+        !utdEmail.isEmpty &&
+        !firstName.isEmpty &&
+        !lastName.isEmpty &&
+        !whatsappNumber.isEmpty &&
+        !emergencyContact.isEmpty &&
+        isSpring25Student &&
+        !acceptanceLetterImageURL.isEmpty &&
+        !studentPhotoURL.isEmpty &&
+        !flightNumber.isEmpty &&
+        !portOfEntryAirport.isEmpty &&
+        !itineraryImageURL.isEmpty &&
+        !dropOffLocation.isEmpty &&
+        agreesToTerms &&
+        agreesToWaiver
+    }
+    
+    // Helper function to format phone numbers
+    static func formatPhoneNumber(_ number: String) -> String {
+        let cleaned = number.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        if cleaned.hasPrefix("91") && cleaned.count == 12 {
+            let countryCode = cleaned.prefix(2)
+            let remaining = cleaned.dropFirst(2)
+            return "\(countryCode)\(remaining)"
+        }
+        return cleaned
     }
 }
 

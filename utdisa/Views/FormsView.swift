@@ -359,23 +359,76 @@ extension View {
 struct AirportPickupFormView: View {
     @Binding var form: AirportPickupForm
     @Binding var isPresented: Bool
+    @State private var showingImageInfo = false
+    @State private var showingWaiverText = false
     
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Personal Information")) {
-                    TextField("Full Name", text: $form.fullName)
-                        .textContentType(.name)
+                // Student Verification
+                Section(header: Text("Student Verification")) {
+                    Toggle("I am a Fall '25 Incoming Student", isOn: $form.isSpring25Student)
+                    
+                    if form.isSpring25Student {
+                        TextField("Acceptance Letter Image URL", text: $form.acceptanceLetterImageURL)
+                            .textContentType(.URL)
+                            .keyboardType(.URL)
+                        
+                        Button("How to upload images?") {
+                            showingImageInfo = true
+                        }
+                        .foregroundColor(ISATheme.peacockBlue)
+                    }
+                }
+                
+                // Basic Information
+                Section(header: Text("Student Information")) {
+                    TextField("UTD ID", text: $form.utdId)
+                        .keyboardType(.numberPad)
+                    
+                    TextField("UTD Email (NetID)", text: $form.utdEmail)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                    
+                    TextField("First Name", text: $form.firstName)
+                        .textContentType(.givenName)
+                    
+                    TextField("Last Name", text: $form.lastName)
+                        .textContentType(.familyName)
                     
                     TextField("Email", text: $form.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
                     
-                    TextField("Phone Number", text: $form.phone)
-                        .textContentType(.telephoneNumber)
-                        .keyboardType(.phonePad)
+                    Picker("Gender", selection: $form.gender) {
+                        ForEach(AirportPickupForm.Gender.allCases, id: \.self) { gender in
+                            Text(gender.rawValue).tag(gender)
+                        }
+                    }
+                    
+                    TextField("Student Photo URL", text: $form.studentPhotoURL)
+                        .textContentType(.URL)
+                        .keyboardType(.URL)
                 }
                 
+                // Contact Information
+                Section(header: Text("Contact Information")) {
+                    TextField("WhatsApp Number (91xxxxxxxxxx)", text: $form.whatsappNumber)
+                        .keyboardType(.numberPad)
+                        .onChange(of: form.whatsappNumber) { newValue in
+                            form.whatsappNumber = AirportPickupForm.formatPhoneNumber(newValue)
+                        }
+                    
+                    TextField("Emergency Contact (91xxxxxxxxxx)", text: $form.emergencyContact)
+                        .keyboardType(.numberPad)
+                        .onChange(of: form.emergencyContact) { newValue in
+                            form.emergencyContact = AirportPickupForm.formatPhoneNumber(newValue)
+                        }
+                }
+                
+                // Flight Details
                 Section(header: Text("Flight Details")) {
                     TextField("Flight Number", text: $form.flightNumber)
                         .textCase(.uppercase)
@@ -383,15 +436,46 @@ struct AirportPickupFormView: View {
                     DatePicker("Arrival Date", selection: $form.arrivalDate, displayedComponents: .date)
                     
                     DatePicker("Arrival Time", selection: $form.arrivalTime, displayedComponents: .hourAndMinute)
-                }
-                
-                Section(header: Text("Additional Information")) {
-                    Stepper("Number of Bags: \(form.numberOfBags)", value: $form.numberOfBags, in: 1...5)
                     
-                    TextEditor(text: $form.additionalNotes)
-                        .frame(height: 100)
+                    Picker("Arrival Airport", selection: $form.arrivalAirport) {
+                        ForEach(AirportPickupForm.DallasAirport.allCases, id: \.self) { airport in
+                            Text(airport.rawValue).tag(airport)
+                        }
+                    }
+                    
+                    TextField("Port of Entry Airport", text: $form.portOfEntryAirport)
+                        .textContentType(.location)
+                    
+                    TextField("Itinerary Image URL", text: $form.itineraryImageURL)
+                        .textContentType(.URL)
+                        .keyboardType(.URL)
                 }
                 
+                // Baggage Information
+                Section(header: Text("Baggage Information")) {
+                    Stepper("Check-in Bags: \(form.checkInBagsCount)", value: $form.checkInBagsCount, in: 0...5)
+                    Stepper("Cabin Bags: \(form.cabinBagsCount)", value: $form.cabinBagsCount, in: 0...3)
+                }
+                
+                // Drop-off Location
+                Section(header: Text("Drop-off Location")) {
+                    TextField("Drop-off Address", text: $form.dropOffLocation)
+                        .textContentType(.fullStreetAddress)
+                }
+                
+                // Terms and Agreements
+                Section(header: Text("Terms and Agreements")) {
+                    Toggle("I agree to the Terms and Conditions", isOn: $form.agreesToTerms)
+                    
+                    Toggle("I agree to the Liability Waiver", isOn: $form.agreesToWaiver)
+                    
+                    Button("View Waiver") {
+                        showingWaiverText = true
+                    }
+                    .foregroundColor(ISATheme.peacockBlue)
+                }
+                
+                // Submit Button
                 Section {
                     Button(action: submitForm) {
                         Text("Submit Request")
@@ -406,15 +490,25 @@ struct AirportPickupFormView: View {
             .navigationBarItems(trailing: Button("Cancel") {
                 isPresented = false
             })
+            .alert("Image Upload Instructions", isPresented: $showingImageInfo) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("1. Go to postimage.org\n2. Upload your image\n3. Copy the 'Direct Link'\n4. Paste the link in the form")
+            }
+            .alert("Liability Waiver", isPresented: $showingWaiverText) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("I WAIVE, RELEASE, AND DISCHARGE from any and all liability, including but not limited to, liability arising from the negligence or fault of the entities or persons released, for my death, disability, personal injury, property damage, property theft, or actions of any kind.")
+            }
         }
     }
     
     private func submitForm() {
-        // Here we'll submit to the Microsoft Form
         if let url = URL(string: "https://forms.office.com/r/pFCGev576R") {
-            UIApplication.shared.open(url)
+            URLHandler.open(url) { _ in
+                isPresented = false
+            }
         }
-        isPresented = false
     }
 }
 

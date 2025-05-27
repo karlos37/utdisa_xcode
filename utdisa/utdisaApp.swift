@@ -15,25 +15,3 @@ struct UTDISAApp: App {
         }
     }
 }
-
-struct ContentView: View {
-    var body: some View {
-        TabView {
-            EventsView()
-                .tabItem {
-                    Label("Events", systemImage: "calendar")
-                }
-            
-            TeamRosterView()
-                .tabItem {
-                    Label("Team", systemImage: "person.3")
-                }
-            
-            FormsView()
-                .tabItem {
-                    Label("Forms", systemImage: "doc.text")
-                }
-        }
-        .tint(ISATheme.saffron)
-    }
-}

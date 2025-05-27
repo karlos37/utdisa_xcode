@@ -1,45 +1,46 @@
 import SwiftUI
+import SafariServices
 
 struct FormsView: View {
+    private let forms: [FormType] = [.airportPickup, .feedback, .sponsor]
+    @State private var selectedForm: FormType?
+    @State private var showInAppForm = false
+    @State private var airportPickupForm = AirportPickupForm()
+    @State private var feedbackForm = FeedbackForm()
+    @State private var sponsorForm = SponsorForm()
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: ISATheme.Padding.large) {
-                    // Forms Grid
-                    LazyVGrid(
-                        columns: [GridItem(.flexible())],
-                        spacing: ISATheme.Padding.medium
-                    ) {
-                        NavigationLink(destination: FeedbackFormView()) {
-                            FormCard(
-                                title: "Feedback",
-                                icon: "message",
-                                color: ISATheme.saffron,
-                                description: "Share your thoughts and suggestions with us"
-                            )
-                        }
+                    // Header
+                    VStack(spacing: ISATheme.Padding.medium) {
+                        Text("ISA Forms")
+                            .font(ISATheme.TextStyle.title)
+                            .foregroundColor(ISATheme.navy)
                         
-                        NavigationLink(destination: SponsorFormView()) {
-                            FormCard(
-                                title: "Sponsor Request",
-                                icon: "dollarsign.circle",
-                                color: ISATheme.green,
-                                description: "Partner with us to support our community"
-                            )
-                        }
-                        
-                        NavigationLink(destination: AirportPickupFormView()) {
-                            FormCard(
-                                title: "Airport Pickup",
-                                icon: "airplane.arrival",
-                                color: ISATheme.navy,
-                                description: "Request pickup service from DFW or Love Field"
-                            )
+                        Text("Fill out forms for various ISA services")
+                            .font(ISATheme.TextStyle.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top)
+                    
+                    // Forms List
+                    LazyVStack(spacing: ISATheme.Padding.medium) {
+                        ForEach(forms) { form in
+                            FormCard(form: form) {
+                                handleWebAction(for: form)
+                            } inAppAction: {
+                                selectedForm = form
+                                showInAppForm = true
+                            }
                         }
                     }
                     .padding(.horizontal)
                 }
-                .padding(.vertical)
             }
             .background(
                 ISATheme.indianGradient
@@ -47,41 +48,83 @@ struct FormsView: View {
                     .ignoresSafeArea()
             )
             .navigationTitle("Forms")
+            .sheet(isPresented: $showInAppForm) {
+                if let form = selectedForm {
+                    switch form {
+                    case .airportPickup:
+                        AirportPickupFormView(form: $airportPickupForm, isPresented: $showInAppForm)
+                    case .feedback:
+                        FeedbackFormView(form: $feedbackForm, isPresented: $showInAppForm)
+                    case .sponsor:
+                        SponsorFormView(form: $sponsorForm, isPresented: $showInAppForm)
+                    }
+                }
+            }
+            .alert("Error", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    private func handleWebAction(for form: FormType) {
+        if let url = form.formURL {
+            URLHandler.open(url) { success in
+                if !success {
+                    errorMessage = "Could not open the form. Please try again later."
+                    showErrorAlert = true
+                }
+            }
+        } else {
+            selectedForm = form
+            showInAppForm = true
         }
     }
 }
 
 struct FormCard: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let description: String
+    let form: FormType
+    let webAction: () -> Void
+    let inAppAction: () -> Void
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: ISATheme.Padding.small) {
-                HStack {
-                    Image(systemName: icon)
-                        .foregroundColor(color)
-                        .font(.system(size: 24))
-                        .frame(width: 32)
-                    
-                    Text(title)
-                        .font(ISATheme.TextStyle.heading)
-                        .foregroundColor(ISATheme.navy)
+        VStack(alignment: .leading, spacing: ISATheme.Padding.medium) {
+            Text(form.title)
+                .font(ISATheme.TextStyle.heading)
+                .foregroundColor(ISATheme.navy)
+            
+            Text(form.description)
+                .font(ISATheme.TextStyle.body)
+                .foregroundColor(.secondary)
+            
+            HStack(spacing: ISATheme.Padding.medium) {
+                Button(action: webAction) {
+                    HStack {
+                        Image(systemName: "safari")
+                        Text("Open in Browser")
+                    }
+                    .font(ISATheme.TextStyle.body.bold())
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(ISATheme.peacockBlue)
+                    .cornerRadius(10)
                 }
                 
-                Text(description)
-                    .font(ISATheme.TextStyle.body)
-                    .foregroundColor(.secondary)
-                    .padding(.leading, 40)
+                Button(action: inAppAction) {
+                    HStack {
+                        Image(systemName: "app")
+                        Text("Fill in App")
+                    }
+                    .font(ISATheme.TextStyle.body.bold())
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(ISATheme.saffron)
+                    .cornerRadius(10)
+                }
             }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(color)
-                .font(.system(size: 20, weight: .semibold))
         }
         .padding()
         .background(ISATheme.CardStyle.background())
@@ -161,288 +204,229 @@ struct FormSubmitButton: View {
 }
 
 struct FeedbackFormView: View {
-    @State private var name = ""
-    @State private var email = ""
-    @State private var feedback = ""
+    @Binding var form: FeedbackForm
+    @Binding var isPresented: Bool
     @State private var showingSubmitAlert = false
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: ISATheme.Padding.large) {
-                VStack(spacing: ISATheme.Padding.medium) {
-                    FormTextField(
-                        title: "Name",
-                        text: $name
-                    )
+        NavigationView {
+            Form {
+                Section(header: Text("Your Information")) {
+                    TextField("Name", text: $form.name)
+                        .textContentType(.name)
                     
-                    FormTextField(
-                        title: "Email",
-                        text: $email,
-                        keyboardType: .emailAddress,
-                        autocapitalization: .never
-                    )
+                    TextField("Email", text: $form.email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Your Feedback")
-                        .font(ISATheme.TextStyle.body)
-                        .foregroundColor(ISATheme.navy)
+                Section(header: Text("Feedback Details")) {
+                    Picker("Category", selection: $form.category) {
+                        ForEach(FeedbackForm.FeedbackCategory.allCases, id: \.self) { category in
+                            Text(category.rawValue).tag(category)
+                        }
+                    }
                     
-                    TextEditor(text: $feedback)
+                    TextEditor(text: $form.message)
                         .frame(height: 150)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
                 }
                 
-                FormSubmitButton(
-                    title: "Submit Feedback",
-                    color: ISATheme.saffron,
-                    action: submitFeedback
-                )
+                Section {
+                    Button(action: submitForm) {
+                        Text("Submit Feedback")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.white)
+                    }
+                    .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
+                    .disabled(!form.isValid)
+                }
             }
-            .padding()
-            .background(ISATheme.CardStyle.background())
-            .cornerRadius(ISATheme.CardStyle.cornerRadius)
-            .shadow(
-                color: ISATheme.CardStyle.shadowColor,
-                radius: ISATheme.CardStyle.shadowRadius
-            )
-            .padding()
-        }
-        .background(
-            ISATheme.indianGradient
-                .opacity(0.1)
-                .ignoresSafeArea()
-        )
-        .navigationTitle("Feedback")
-        .alert("Thank You!", isPresented: $showingSubmitAlert) {
-            Button("OK", role: .cancel) {
-                dismiss()
+            .navigationTitle("Share Your Feedback")
+            .navigationBarItems(trailing: Button("Cancel") {
+                isPresented = false
+            })
+            .alert("Thank You!", isPresented: $showingSubmitAlert) {
+                Button("OK", role: .cancel) {
+                    isPresented = false
+                }
+            } message: {
+                Text("Your feedback has been submitted successfully.")
             }
-        } message: {
-            Text("Your feedback has been submitted successfully.")
         }
     }
     
-    private func submitFeedback() {
-        // Add submission logic here
+    private func submitForm() {
+        // Here we would submit the feedback to a backend service
         showingSubmitAlert = true
     }
 }
 
 struct SponsorFormView: View {
-    @State private var companyName = ""
-    @State private var contactName = ""
-    @State private var email = ""
-    @State private var phone = ""
-    @State private var sponsorshipLevel = "Gold"
-    @State private var additionalInfo = ""
+    @Binding var form: SponsorForm
+    @Binding var isPresented: Bool
     @State private var showingSubmitAlert = false
-    @Environment(\.dismiss) private var dismiss
-    
-    let sponsorshipLevels = ["Gold", "Silver", "Bronze"]
+    @State private var showingTierInfo = false
+    @State private var selectedTierForInfo: SponsorForm.SponsorshipTier?
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: ISATheme.Padding.large) {
-                VStack(spacing: ISATheme.Padding.medium) {
-                    FormTextField(
-                        title: "Company Name",
-                        text: $companyName
-                    )
+        NavigationView {
+            Form {
+                Section(header: Text("Company Information")) {
+                    TextField("Company Name", text: $form.companyName)
                     
-                    FormTextField(
-                        title: "Contact Name",
-                        text: $contactName
-                    )
+                    TextField("Contact Name", text: $form.contactName)
+                        .textContentType(.name)
                     
-                    FormTextField(
-                        title: "Email",
-                        text: $email,
-                        keyboardType: .emailAddress,
-                        autocapitalization: .never
-                    )
+                    TextField("Email", text: $form.email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
                     
-                    FormTextField(
-                        title: "Phone",
-                        text: $phone,
-                        keyboardType: .phonePad
-                    )
+                    TextField("Phone", text: $form.phone)
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
                 }
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sponsorship Level")
-                        .font(ISATheme.TextStyle.body)
-                        .foregroundColor(ISATheme.navy)
-                    
-                    Picker("Sponsorship Level", selection: $sponsorshipLevel) {
-                        ForEach(sponsorshipLevels, id: \.self) { level in
-                            Text(level)
+                Section(header: Text("Sponsorship Details")) {
+                    Picker("Sponsorship Tier", selection: $form.sponsorshipTier) {
+                        ForEach(SponsorForm.SponsorshipTier.allCases, id: \.self) { tier in
+                            Text("\(tier.rawValue) (\(tier.amount))").tag(tier)
                         }
                     }
-                    .pickerStyle(.segmented)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Additional Information")
-                        .font(ISATheme.TextStyle.body)
-                        .foregroundColor(ISATheme.navy)
                     
-                    TextEditor(text: $additionalInfo)
+                    Button("View Tier Benefits") {
+                        selectedTierForInfo = form.sponsorshipTier
+                        showingTierInfo = true
+                    }
+                    
+                    TextEditor(text: $form.message)
                         .frame(height: 100)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
+                        .placeholder(when: form.message.isEmpty) {
+                            Text("Additional message or requirements...")
+                                .foregroundColor(.gray)
+                    }
                 }
                 
-                FormSubmitButton(
-                    title: "Submit Request",
-                    color: ISATheme.green,
-                    action: submitSponsorRequest
-                )
+                Section {
+                    Button(action: submitForm) {
+                        Text("Submit Request")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.white)
+                    }
+                    .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
+                    .disabled(!form.isValid)
+                }
             }
-            .padding()
-            .background(ISATheme.CardStyle.background())
-            .cornerRadius(ISATheme.CardStyle.cornerRadius)
-            .shadow(
-                color: ISATheme.CardStyle.shadowColor,
-                radius: ISATheme.CardStyle.shadowRadius
-            )
-            .padding()
-        }
-        .background(
-            ISATheme.indianGradient
-                .opacity(0.1)
-                .ignoresSafeArea()
-        )
-        .navigationTitle("Sponsor Request")
-        .alert("Thank You!", isPresented: $showingSubmitAlert) {
-            Button("OK", role: .cancel) {
-                dismiss()
+            .navigationTitle("Become a Sponsor")
+            .navigationBarItems(trailing: Button("Cancel") {
+                isPresented = false
+            })
+            .alert("Thank You!", isPresented: $showingSubmitAlert) {
+                Button("OK", role: .cancel) {
+                    isPresented = false
+                }
+            } message: {
+                Text("Your sponsorship request has been submitted successfully.")
             }
-        } message: {
-            Text("Your sponsorship request has been submitted successfully.")
+            .alert("Tier Benefits", isPresented: $showingTierInfo) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let tier = selectedTierForInfo {
+                    Text("\(tier.rawValue) Tier (\(tier.amount))\n\nBenefits:\n\(tier.benefits)")
+                }
+            }
         }
     }
     
-    private func submitSponsorRequest() {
+    private func submitForm() {
+        // Here we would submit the sponsorship request to a backend service
         showingSubmitAlert = true
     }
 }
 
-struct AirportPickupFormView: View {
-    @State private var name = ""
-    @State private var email = ""
-    @State private var phone = ""
-    @State private var flightNumber = ""
-    @State private var arrivalDate = Date()
-    @State private var additionalInfo = ""
-    @State private var showingSubmitAlert = false
-    @Environment(\.dismiss) private var dismiss
-    
-    // Flight number formatter
-    private func formatFlightNumber(_ input: String) -> String {
-        // Convert to uppercase
-        let uppercased = input.uppercased()
-        // Remove any characters that aren't letters or numbers
-        let filtered = uppercased.filter { $0.isLetter || $0.isNumber }
-        // Limit to 8 characters (typical max length for flight numbers)
-        return String(filtered.prefix(8))
+extension View {
+    func placeholder<Content: View>(
+        when shouldShow: Bool,
+        alignment: Alignment = .leading,
+        @ViewBuilder placeholder: () -> Content
+    ) -> some View {
+        ZStack(alignment: alignment) {
+            placeholder().opacity(shouldShow ? 1 : 0)
+            self
+        }
     }
+}
+
+struct AirportPickupFormView: View {
+    @Binding var form: AirportPickupForm
+    @Binding var isPresented: Bool
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: ISATheme.Padding.large) {
-                VStack(spacing: ISATheme.Padding.medium) {
-                    FormTextField(
-                        title: "Full Name",
-                        text: $name
-                    )
+        NavigationView {
+            Form {
+                Section(header: Text("Personal Information")) {
+                    TextField("Full Name", text: $form.fullName)
+                        .textContentType(.name)
                     
-                    FormTextField(
-                        title: "Email",
-                        text: $email,
-                        keyboardType: .emailAddress,
-                        autocapitalization: .never
-                    )
+                    TextField("Email", text: $form.email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
                     
-                    FormTextField(
-                        title: "Phone",
-                        text: $phone,
-                        keyboardType: .phonePad
-                    )
-                    
-                    FormTextField(
-                        title: "Flight Number",
-                        text: $flightNumber,
-                        keyboardType: .asciiCapable,
-                        autocapitalization: .words,
-                        formatOnChange: formatFlightNumber
-                    )
+                    TextField("Phone Number", text: $form.phone)
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
                 }
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Arrival Date & Time")
-                        .font(ISATheme.TextStyle.body)
-                        .foregroundColor(ISATheme.navy)
+                Section(header: Text("Flight Details")) {
+                    TextField("Flight Number", text: $form.flightNumber)
+                        .textCase(.uppercase)
                     
-                    DatePicker(
-                        "",
-                        selection: $arrivalDate,
-                        in: Date()...,
-                        displayedComponents: [.date, .hourAndMinute]
-                    )
+                    DatePicker("Arrival Date", selection: $form.arrivalDate, displayedComponents: .date)
+                    
+                    DatePicker("Arrival Time", selection: $form.arrivalTime, displayedComponents: .hourAndMinute)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Additional Information")
-                        .font(ISATheme.TextStyle.body)
-                        .foregroundColor(ISATheme.navy)
+                Section(header: Text("Additional Information")) {
+                    Stepper("Number of Bags: \(form.numberOfBags)", value: $form.numberOfBags, in: 1...5)
                     
-                    TextEditor(text: $additionalInfo)
+                    TextEditor(text: $form.additionalNotes)
                         .frame(height: 100)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
                 }
                 
-                FormSubmitButton(
-                    title: "Request Pickup",
-                    color: ISATheme.navy,
-                    action: submitPickupRequest
-                )
+                Section {
+                    Button(action: submitForm) {
+                        Text("Submit Request")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.white)
+                    }
+                    .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
+                    .disabled(!form.isValid)
+                }
             }
-            .padding()
-            .background(ISATheme.CardStyle.background())
-            .cornerRadius(ISATheme.CardStyle.cornerRadius)
-            .shadow(
-                color: ISATheme.CardStyle.shadowColor,
-                radius: ISATheme.CardStyle.shadowRadius
-            )
-            .padding()
-        }
-        .background(
-            ISATheme.indianGradient
-                .opacity(0.1)
-                .ignoresSafeArea()
-        )
-        .navigationTitle("Airport Pickup")
-        .alert("Thank You!", isPresented: $showingSubmitAlert) {
-            Button("OK", role: .cancel) {
-                dismiss()
-            }
-        } message: {
-            Text("Your airport pickup request has been submitted successfully.")
+            .navigationTitle("Airport Pickup Request")
+            .navigationBarItems(trailing: Button("Cancel") {
+                isPresented = false
+            })
         }
     }
     
-    private func submitPickupRequest() {
-        showingSubmitAlert = true
+    private func submitForm() {
+        // Here we'll submit to the Microsoft Form
+        if let url = URL(string: "https://forms.office.com/r/pFCGev576R") {
+            UIApplication.shared.open(url)
+        }
+        isPresented = false
+    }
+}
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<SafariView>) -> SFSafariViewController {
+        return SFSafariViewController(url: url)
+    }
+    
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: UIViewControllerRepresentableContext<SafariView>) {
+        // No update needed
     }
 }
 

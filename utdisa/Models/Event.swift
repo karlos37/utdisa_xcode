@@ -1,18 +1,35 @@
 import Foundation
+import MapKit
 
 struct Event: Identifiable {
     let id = UUID()
     var title: String
+    var startDate: Date
+    var endDate: Date?
     var description: String
-    var date: Date
     var location: String
-    var imageURL: URL?
-    var registrationLink: URL?
+    var locationURL: URL?
+    var registrationURL: URL?
+    var posterImageName: String
     
-    var formattedDate: String {
+    var isMultiDayEvent: Bool {
+        guard let endDate = endDate else { return false }
+        return !Calendar.current.isDate(startDate, inSameDayAs: endDate)
+    }
+    
+    var dateRangeText: String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        formatter.dateFormat = "MMM d"
+        
+        if let endDate = endDate, isMultiDayEvent {
+            return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
+        }
+        return formatter.string(from: startDate)
+    }
+    
+    var timeText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: startDate)
     }
 } 

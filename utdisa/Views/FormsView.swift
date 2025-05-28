@@ -207,6 +207,10 @@ struct FeedbackFormView: View {
     @Binding var form: FeedbackForm
     @Binding var isPresented: Bool
     @State private var showingSubmitAlert = false
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
+    @State private var isSubmitting = false
+    private let formsService = FormsService()
     
     var body: some View {
         NavigationView {
@@ -214,10 +218,14 @@ struct FeedbackFormView: View {
                 Section(header: Text("Your Information")) {
                     TextField("Name", text: $form.name)
                         .textContentType(.name)
+                        .autocapitalization(.words)
+                        .disabled(isSubmitting)
                     
                     TextField("Email", text: $form.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .disabled(isSubmitting)
                 }
                 
                 Section(header: Text("Feedback Details")) {
@@ -226,38 +234,81 @@ struct FeedbackFormView: View {
                             Text(category.rawValue).tag(category)
                         }
                     }
+                    .disabled(isSubmitting)
                     
-                    TextEditor(text: $form.message)
-                        .frame(height: 150)
+                    ZStack(alignment: .topLeading) {
+                        if form.message.isEmpty {
+                            Text("Enter your message here...")
+                                .foregroundColor(.gray)
+                                .padding(.top, 8)
+                                .padding(.leading, 5)
+                        }
+                        TextEditor(text: $form.message)
+                            .frame(minHeight: 100)
+                            .disabled(isSubmitting)
+                    }
                 }
                 
                 Section {
                     Button(action: submitForm) {
-                        Text("Submit Feedback")
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.white)
+                        HStack {
+                            Text("Submit Feedback")
+                                .frame(maxWidth: .infinity)
+                            if isSubmitting {
+                                Spacer()
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                        .foregroundColor(.white)
                     }
                     .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
-                    .disabled(!form.isValid)
+                    .disabled(!form.isValid || isSubmitting)
                 }
             }
             .navigationTitle("Share Your Feedback")
             .navigationBarItems(trailing: Button("Cancel") {
                 isPresented = false
-            })
+            }
+            .disabled(isSubmitting))
             .alert("Thank You!", isPresented: $showingSubmitAlert) {
                 Button("OK", role: .cancel) {
+                    form = FeedbackForm() // Reset form
                     isPresented = false
                 }
             } message: {
                 Text("Your feedback has been submitted successfully.")
             }
+            .alert("Error", isPresented: $showingErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+            .interactiveDismissDisabled(isSubmitting)
         }
     }
     
     private func submitForm() {
-        // Here we would submit the feedback to a backend service
-        showingSubmitAlert = true
+        guard !isSubmitting else { return }
+        
+        // Dismiss keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                     to: nil, 
+                                     from: nil, 
+                                     for: nil)
+        
+        isSubmitting = true
+        Task {
+            do {
+                _ = try await formsService.submitFeedbackForm(form)
+                isSubmitting = false
+                showingSubmitAlert = true
+            } catch {
+                isSubmitting = false
+                errorMessage = error.localizedDescription
+                showingErrorAlert = true
+            }
+        }
     }
 }
 

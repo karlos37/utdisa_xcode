@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FED237052DE76A1400BC87C3 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = FED237042DE76A1400BC87C3 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		FE9D4CD52DE586C000F3FA32 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,12 +31,24 @@
 		FE9D4CC72DE586BD00F3FA32 /* utdisa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = utdisa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FE9D4CD42DE586C000F3FA32 /* utdisaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = utdisaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FE9D4CDE2DE586C100F3FA32 /* utdisaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = utdisaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		FE9D4CF12DE586C200F3FA32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FED236F42DE7650400BC87C3 /* Exceptions for "utdisa" folder in "utdisa" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FE9D4CC62DE586BD00F3FA32 /* utdisa */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FE9D4CC92DE586BD00F3FA32 /* utdisa */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FED236F42DE7650400BC87C3 /* Exceptions for "utdisa" folder in "utdisa" target */,
+			);
 			path = utdisa;
 			sourceTree = "<group>";
 		};
@@ -53,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FED237052DE76A1400BC87C3 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +96,7 @@
 				FE9D4CC92DE586BD00F3FA32 /* utdisa */,
 				FE9D4CD72DE586C000F3FA32 /* utdisaTests */,
 				FE9D4CE12DE586C100F3FA32 /* utdisaUITests */,
+				FED237032DE76A1400BC87C3 /* Frameworks */,
 				FE9D4CC82DE586BD00F3FA32 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,12 +111,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		FE9D4CC92DE586BD00F3FA32 /* utdisa */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
+		FED237032DE76A1400BC87C3 /* Frameworks */ = {
+			isa = PBXGroup;
 			children = (
-				FE9D4CF12DE586C200F3FA32 /* Info.plist */,
 			);
-			path = utdisa;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -121,6 +138,7 @@
 			);
 			name = utdisa;
 			packageProductDependencies = (
+				FED237042DE76A1400BC87C3 /* Supabase */,
 			);
 			productName = utdisa;
 			productReference = FE9D4CC72DE586BD00F3FA32 /* utdisa.app */;
@@ -204,6 +222,9 @@
 			);
 			mainGroup = FE9D4CBE2DE586BD00F3FA32;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FED236F72DE7661000BC87C3 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FE9D4CC82DE586BD00F3FA32 /* Products */;
 			projectDirPath = "";
@@ -571,6 +592,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FED236F72DE7661000BC87C3 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FED237042DE76A1400BC87C3 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FED236F72DE7661000BC87C3 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FE9D4CBF2DE586BD00F3FA32 /* Project object */;
 }

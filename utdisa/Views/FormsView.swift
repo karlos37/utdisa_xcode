@@ -13,40 +13,38 @@ struct FormsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: ISATheme.Padding.large) {
-                    // Header
-                    VStack(spacing: ISATheme.Padding.medium) {
-                        Text("ISA Forms")
-                            .font(ISATheme.TextStyle.title)
-                            .foregroundColor(ISATheme.navy)
+            ZStack {
+                ISATheme.indianGradient.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: ISATheme.Padding.large) {
+                        // Header
+                        VStack(spacing: ISATheme.Padding.medium) {
+                            Text("ISA Forms")
+                                .font(ISATheme.TextStyle.title)
+                                .foregroundColor(ISATheme.navy)
+                            
+                            Text("Fill out forms for various ISA services")
+                                .font(ISATheme.TextStyle.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top)
                         
-                        Text("Fill out forms for various ISA services")
-                            .font(ISATheme.TextStyle.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top)
-                    
-                    // Forms List
-                    LazyVStack(spacing: ISATheme.Padding.medium) {
-                        ForEach(forms) { form in
-                            FormCard(form: form) {
-                                handleWebAction(for: form)
-                            } inAppAction: {
-                                selectedForm = form
-                                showInAppForm = true
+                        // Forms List
+                        LazyVStack(spacing: ISATheme.Padding.medium) {
+                            ForEach(forms) { form in
+                                FormCard(form: form) {
+                                    handleWebAction(for: form)
+                                } inAppAction: {
+                                    selectedForm = form
+                                    showInAppForm = true
+                                }
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
             }
-            .background(
-                ISATheme.indianGradient
-                    .opacity(0.1)
-                    .ignoresSafeArea()
-            )
             .navigationTitle("Forms")
             .sheet(isPresented: $showInAppForm) {
                 if let form = selectedForm {

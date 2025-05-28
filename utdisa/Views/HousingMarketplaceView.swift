@@ -10,43 +10,60 @@ struct HousingMarketplaceView: View {
     
     var body: some View {
         NavigationView {
-            Group {
-                if isLoading {
-                    ProgressView("Loading Listings...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let errorMessage = errorMessage {
-                    VStack {
-                        Text("Error: \(errorMessage)")
-                            .foregroundColor(.red)
-                        Button("Retry") { fetchListings() }
-                            .padding(.top)
-                    }
-                } else if listings.isEmpty {
-                    Text("No listings found.")
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(listings) { listing in
-                                HousingListingCard(listing: listing)
-                                    .padding(.horizontal)
-                            }
+            ZStack {
+                ISATheme.indianGradient.ignoresSafeArea()
+                Group {
+                    if isLoading {
+                        ProgressView("Loading Listings...")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let errorMessage = errorMessage {
+                        VStack {
+                            Text("Error: \(errorMessage)")
+                                .foregroundColor(.red)
+                            Button("Retry") { fetchListings() }
+                                .padding(.top)
+                                .foregroundColor(.white)
+                                .background(ISATheme.saffron)
+                                .cornerRadius(8)
                         }
-                        .padding(.vertical)
+                    } else if listings.isEmpty {
+                        Text("No listings found.")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                Text("🏠 Housing Marketplace")
+                                    .font(ISATheme.TextStyle.title)
+                                    .foregroundColor(ISATheme.peacockBlue)
+                                    .padding(.leading)
+                                    .padding(.top, 8)
+                                Divider()
+                                    .background(ISATheme.saffron)
+                                    .padding(.horizontal)
+                                ForEach(listings) { listing in
+                                    HousingListingCard(listing: listing)
+                                        .padding(.horizontal)
+                                }
+                            }
+                            .padding(.vertical)
+                        }
                     }
                 }
             }
-            .navigationTitle("Housing Marketplace")
+            .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showListingForm = true }) {
                         Label("Add Listing", systemImage: "plus")
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(ISATheme.peacockBlue)
+                            .cornerRadius(8)
                     }
                 }
             }
             .sheet(isPresented: $showListingForm, onDismiss: {
-                // After the form is dismissed, refresh listings and show success alert
                 fetchListings()
                 showSuccessAlert = true
             }) {
@@ -70,7 +87,6 @@ struct HousingMarketplaceView: View {
                     .select()
                     .order("created_at", ascending: false)
                     .execute()
-//                print("Raw JSON: \(String(data: result.data, encoding: .utf8) ?? "")")
                 let response: [HousingListing] = try SupabaseManager.sharedDecoder.decode([HousingListing].self, from: result.data)
                 DispatchQueue.main.async {
                     self.listings = response
@@ -92,56 +108,69 @@ struct HousingListingCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let firstUrl = listing.photo_urls.first, let url = URL(string: firstUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                            .frame(height: 180)
-                            .frame(maxWidth: .infinity)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 180)
-                            .frame(maxWidth: .infinity)
-                            .clipped()
-                    case .failure:
-                        Color.gray.frame(height: 180)
-                    @unknown default:
-                        Color.gray.frame(height: 180)
+            if !listing.photo_urls.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(listing.photo_urls, id: \.self) { urlString in
+                            if let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                            .frame(width: 120, height: 120)
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 120, height: 120)
+                                            .clipped()
+                                    case .failure:
+                                        Color.gray.frame(width: 120, height: 120)
+                                    @unknown default:
+                                        Color.gray.frame(width: 120, height: 120)
+                                    }
+                                }
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(ISATheme.saffron, lineWidth: 2)
+                                )
+                            }
+                        }
                     }
+                    .padding(.vertical, 4)
                 }
-                .cornerRadius(10)
             }
             Text(listing.apartment_name)
-                .font(.headline)
+                .font(ISATheme.TextStyle.heading)
+                .foregroundColor(ISATheme.peacockBlue)
             Text("Type: \(listing.apartment_type) | \(listing.availability.capitalized)")
-                .font(.subheadline)
+                .font(ISATheme.TextStyle.subheading)
                 .foregroundColor(.secondary)
             Text("Rent: $\(String(format: "%.2f", listing.rent)) / month")
-                .font(.subheadline)
+                .font(ISATheme.TextStyle.subheading)
+                .foregroundColor(ISATheme.green)
             if let aptNum = listing.apartment_number, !aptNum.isEmpty {
                 Text("Apt #: \(aptNum)")
-                    .font(.subheadline)
+                    .font(ISATheme.TextStyle.body)
             }
             Text("Lease: \(listing.lease_type.capitalized)")
-                .font(.subheadline)
+                .font(ISATheme.TextStyle.body)
             if listing.lease_type == "existing", let months = listing.lease_months_left {
                 Text("Months left: \(months)")
-                    .font(.subheadline)
+                    .font(ISATheme.TextStyle.body)
             }
             if listing.is_temporary {
                 Text("Temporary Housing Available")
-                    .font(.subheadline)
-                    .foregroundColor(.orange)
+                    .font(ISATheme.TextStyle.body)
+                    .foregroundColor(ISATheme.saffron)
                 if let from = listing.available_from, let to = listing.available_to {
                     Text("From \(formattedDate(from)) to \(formattedDate(to))")
-                        .font(.subheadline)
+                        .font(ISATheme.TextStyle.body)
                 }
                 if let perDay = listing.rent_per_day {
                     Text("$\(String(format: "%.2f", perDay)) per day")
-                        .font(.subheadline)
+                        .font(ISATheme.TextStyle.body)
                 }
             }
             if let created = listing.created_at {
@@ -151,9 +180,13 @@ struct HousingListingCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.07), radius: 4, x: 0, y: 2)
+        .background(
+            ISATheme.CardStyle.background()
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: ISATheme.CardStyle.cornerRadius)
+                .stroke(ISATheme.saffron.opacity(0.5), lineWidth: 2)
+        )
     }
     
     private func formattedDate(_ date: Date) -> String {

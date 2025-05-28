@@ -25,35 +25,33 @@ struct EventsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: ISATheme.Padding.large) {
-                    // Header
-                    VStack(spacing: ISATheme.Padding.medium) {
-                        Text("Upcoming Events")
-                            .font(ISATheme.TextStyle.title)
-                            .foregroundColor(ISATheme.navy)
-                        
-                        Text("Join us for these exciting events!")
-                            .font(ISATheme.TextStyle.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top)
-                    
-                    // Events List
-                    LazyVStack(spacing: ISATheme.Padding.medium) {
-                        ForEach(events) { event in
-                            EventCard(event: event)
+            ZStack {
+                ISATheme.indianGradient.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: ISATheme.Padding.large) {
+                        // Header
+                        VStack(spacing: ISATheme.Padding.medium) {
+                            Text("Upcoming Events")
+                                .font(ISATheme.TextStyle.title)
+                                .foregroundColor(ISATheme.navy)
+                            
+                            Text("Join us for these exciting events!")
+                                .font(ISATheme.TextStyle.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
                         }
+                        .padding(.top)
+                        
+                        // Events List
+                        LazyVStack(spacing: ISATheme.Padding.medium) {
+                            ForEach(events) { event in
+                                EventCard(event: event)
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
             }
-            .background(
-                ISATheme.indianGradient
-                    .opacity(0.1)
-                    .ignoresSafeArea()
-            )
             .navigationTitle("Events")
         }
     }

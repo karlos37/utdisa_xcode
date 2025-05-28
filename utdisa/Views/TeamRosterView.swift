@@ -143,52 +143,50 @@ struct TeamRosterView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: ISATheme.Padding.large) {
-                    // Header Section
-                    VStack(spacing: ISATheme.Padding.medium) {
-                        Text("Meet Our Team")
-                            .font(ISATheme.TextStyle.title)
-                            .foregroundColor(ISATheme.navy)
+            ZStack {
+                ISATheme.indianGradient.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: ISATheme.Padding.large) {
+                        // Header Section
+                        VStack(spacing: ISATheme.Padding.medium) {
+                            Text("Meet Our Team")
+                                .font(ISATheme.TextStyle.title)
+                                .foregroundColor(ISATheme.navy)
+                            
+                            Text("The dedicated individuals behind UTD Indian Students Association")
+                                .font(ISATheme.TextStyle.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        .padding(.top)
                         
-                        Text("The dedicated individuals behind UTD Indian Students Association")
-                            .font(ISATheme.TextStyle.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                        // Executive Board Section
+                        TeamSection(
+                            title: "Executive Board",
+                            members: teamMembers.filter { 
+                                ["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position)
+                            }
+                        )
+                        
+                        // Officers Section
+                        TeamSection(
+                            title: "Officers",
+                            members: teamMembers.filter {
+                                !["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position) &&
+                                !$0.position.contains("Events & Logistics")
+                            }
+                        )
+                        
+                        // Events & Logistics Team Section
+                        TeamSection(
+                            title: "Events & Logistics Team",
+                            members: teamMembers.filter { $0.position.contains("Events & Logistics") }
+                        )
                     }
-                    .padding(.top)
-                    
-                    // Executive Board Section
-                    TeamSection(
-                        title: "Executive Board",
-                        members: teamMembers.filter { 
-                            ["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position)
-                        }
-                    )
-                    
-                    // Officers Section
-                    TeamSection(
-                        title: "Officers",
-                        members: teamMembers.filter {
-                            !["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position) &&
-                            !$0.position.contains("Events & Logistics")
-                        }
-                    )
-                    
-                    // Events & Logistics Team Section
-                    TeamSection(
-                        title: "Events & Logistics Team",
-                        members: teamMembers.filter { $0.position.contains("Events & Logistics") }
-                    )
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
-            .background(
-                ISATheme.indianGradient
-                    .opacity(0.1)
-                    .ignoresSafeArea()
-            )
             .navigationTitle("ISA Team")
         }
     }

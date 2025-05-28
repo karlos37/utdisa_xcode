@@ -2,6 +2,8 @@ import SwiftUI
 import SafariServices
 
 struct FormsView: View {
+    @Binding var showAuthFlow: Bool
+    @Binding var authPurpose: AuthPurpose?
     private let forms: [FormType] = [.airportPickup, .feedback, .sponsor]
     @State private var selectedForm: FormType?
     @State private var showInAppForm = false
@@ -10,41 +12,49 @@ struct FormsView: View {
     @State private var sponsorForm = SponsorForm()
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    @EnvironmentObject var authManager: AuthManager
     
     var body: some View {
         NavigationView {
-            ZStack {
-                ISATheme.indianGradient.ignoresSafeArea()
-                ScrollView {
-                    VStack(spacing: ISATheme.Padding.large) {
-                        // Header
-                        VStack(spacing: ISATheme.Padding.medium) {
-                            Text("ISA Forms")
-                                .font(ISATheme.TextStyle.title)
-                                .foregroundColor(ISATheme.navy)
-                            
-                            Text("Fill out forms for various ISA services")
-                                .font(ISATheme.TextStyle.body)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.top)
+            ScrollView {
+                VStack(spacing: ISATheme.Padding.large) {
+                    // Header
+                    VStack(spacing: ISATheme.Padding.medium) {
+                        Text("ISA Forms")
+                            .font(ISATheme.TextStyle.title)
+                            .foregroundColor(ISATheme.navy)
                         
-                        // Forms List
-                        LazyVStack(spacing: ISATheme.Padding.medium) {
-                            ForEach(forms) { form in
-                                FormCard(form: form) {
-                                    handleWebAction(for: form)
-                                } inAppAction: {
+                        Text("Fill out forms for various ISA services")
+                            .font(ISATheme.TextStyle.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top)
+                    
+                    // Forms List
+                    LazyVStack(spacing: ISATheme.Padding.medium) {
+                        ForEach(forms) { form in
+                            FormCard(form: form) {
+                                handleWebAction(for: form)
+                            } inAppAction: {
+                                if form == .airportPickup && !(authManager.isLoggedIn && authManager.isVerified) {
+                                    authPurpose = .pickupForm
+                                    showAuthFlow = true
+                                } else {
                                     selectedForm = form
                                     showInAppForm = true
                                 }
                             }
                         }
-                        .padding(.horizontal)
                     }
+                    .padding(.horizontal)
                 }
             }
+            .background(
+                ISATheme.indianGradient
+                    .opacity(0.1)
+                    .ignoresSafeArea()
+            )
             .navigationTitle("Forms")
             .sheet(isPresented: $showInAppForm) {
                 if let form = selectedForm {
@@ -653,5 +663,5 @@ struct SafariView: UIViewControllerRepresentable {
 }
 
 #Preview {
-    FormsView()
+    FormsView(showAuthFlow: .constant(false), authPurpose: .constant(nil))
 } 

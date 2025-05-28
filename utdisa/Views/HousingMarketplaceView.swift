@@ -7,6 +7,9 @@ struct HousingMarketplaceView: View {
     @State private var errorMessage: String?
     @State private var showListingForm = false
     @State private var showSuccessAlert = false
+    @EnvironmentObject var authManager: AuthManager
+    @Binding var showAuthFlow: Bool
+    @Binding var authPurpose: AuthPurpose?
     
     var body: some View {
         NavigationView {
@@ -54,7 +57,14 @@ struct HousingMarketplaceView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showListingForm = true }) {
+                    Button(action: {
+                        if authManager.isVerified {
+                            showListingForm = true
+                        } else {
+                            authPurpose = .addListing
+                            showAuthFlow = true
+                        }
+                    }) {
                         Label("Add Listing", systemImage: "plus")
                             .foregroundColor(.white)
                             .padding(8)

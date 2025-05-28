@@ -6,14 +6,13 @@ class FormsService {
     
     // MARK: - Airport Pickup Forms
     
-    func submitAirportPickupForm(_ form: AirportPickupForm) async throws -> AirportPickupFormDB {
+    func submitAirportPickupForm(_ form: AirportPickupForm) async throws {
         let dbForm = form.toDatabase()
-        return try await supabase
+        try await supabase
             .from("airport_pickup_forms")
             .insert(dbForm)
             .single()
             .execute()
-            .value
     }
     
     func getAirportPickupForms() async throws -> [AirportPickupFormDB] {
@@ -27,14 +26,13 @@ class FormsService {
     
     // MARK: - Feedback Forms
     
-    func submitFeedbackForm(_ form: FeedbackForm) async throws -> FeedbackFormDB {
+    func submitFeedbackForm(_ form: FeedbackForm) async throws {
         let dbForm = form.toDatabase()
-        return try await supabase
+        try await supabase
             .from("feedback_forms")
             .insert(dbForm)
             .single()
             .execute()
-            .value
     }
     
     func getFeedbackForms() async throws -> [FeedbackFormDB] {
@@ -48,14 +46,13 @@ class FormsService {
     
     // MARK: - Sponsor Forms
     
-    func submitSponsorForm(_ form: SponsorForm) async throws -> SponsorFormDB {
+    func submitSponsorForm(_ form: SponsorForm) async throws {
         let dbForm = form.toDatabase()
-        return try await supabase
+        try await supabase
             .from("sponsor_forms")
             .insert(dbForm)
             .single()
             .execute()
-            .value
     }
     
     func getSponsorForms() async throws -> [SponsorFormDB] {

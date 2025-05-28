@@ -300,7 +300,7 @@ struct FeedbackFormView: View {
         isSubmitting = true
         Task {
             do {
-                _ = try await formsService.submitFeedbackForm(form)
+                try await formsService.submitFeedbackForm(form)
                 isSubmitting = false
                 showingSubmitAlert = true
             } catch {
@@ -318,6 +318,10 @@ struct SponsorFormView: View {
     @State private var showingSubmitAlert = false
     @State private var showingTierInfo = false
     @State private var selectedTierForInfo: SponsorForm.SponsorshipTier?
+    @State private var isSubmitting = false
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
+    private let formsService = FormsService()
     
     var body: some View {
         NavigationView {
@@ -359,24 +363,38 @@ struct SponsorFormView: View {
                 
                 Section {
                     Button(action: submitForm) {
-                        Text("Submit Request")
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.white)
+                        HStack {
+                            Text("Submit Request")
+                                .frame(maxWidth: .infinity)
+                            if isSubmitting {
+                                Spacer()
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                        .foregroundColor(.white)
                     }
-                    .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
-                    .disabled(!form.isValid)
+                    .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
+                    .disabled(!form.isValid || isSubmitting)
                 }
             }
             .navigationTitle("Become a Sponsor")
             .navigationBarItems(trailing: Button("Cancel") {
                 isPresented = false
-            })
+            }
+            .disabled(isSubmitting))
             .alert("Thank You!", isPresented: $showingSubmitAlert) {
                 Button("OK", role: .cancel) {
+                    form = SponsorForm() // Reset form
                     isPresented = false
                 }
             } message: {
                 Text("Your sponsorship request has been submitted successfully.")
+            }
+            .alert("Error", isPresented: $showingErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
             }
             .alert("Tier Benefits", isPresented: $showingTierInfo) {
                 Button("OK", role: .cancel) { }
@@ -385,12 +403,31 @@ struct SponsorFormView: View {
                     Text("\(tier.rawValue) Tier (\(tier.amount))\n\nBenefits:\n\(tier.benefits)")
                 }
             }
+            .interactiveDismissDisabled(isSubmitting)
         }
     }
     
     private func submitForm() {
-        // Here we would submit the sponsorship request to a backend service
-        showingSubmitAlert = true
+        guard !isSubmitting else { return }
+        
+        // Dismiss keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                     to: nil, 
+                                     from: nil, 
+                                     for: nil)
+        
+        isSubmitting = true
+        Task {
+            do {
+                try await formsService.submitSponsorForm(form)
+                isSubmitting = false
+                showingSubmitAlert = true
+            } catch {
+                isSubmitting = false
+                errorMessage = error.localizedDescription
+                showingErrorAlert = true
+            }
+        }
     }
 }
 
@@ -412,6 +449,11 @@ struct AirportPickupFormView: View {
     @Binding var isPresented: Bool
     @State private var showingImageInfo = false
     @State private var showingWaiverText = false
+    @State private var isSubmitting = false
+    @State private var showingSubmitAlert = false
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
+    private let formsService = FormsService()
     
     var body: some View {
         NavigationView {
@@ -529,18 +571,39 @@ struct AirportPickupFormView: View {
                 // Submit Button
                 Section {
                     Button(action: submitForm) {
-                        Text("Submit Request")
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.white)
+                        HStack {
+                            Text("Submit Request")
+                                .frame(maxWidth: .infinity)
+                            if isSubmitting {
+                                Spacer()
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                        .foregroundColor(.white)
                     }
-                    .listRowBackground(form.isValid ? ISATheme.saffron : Color.gray)
-                    .disabled(!form.isValid)
+                    .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
+                    .disabled(!form.isValid || isSubmitting)
                 }
             }
             .navigationTitle("Airport Pickup Request")
             .navigationBarItems(trailing: Button("Cancel") {
                 isPresented = false
-            })
+            }
+            .disabled(isSubmitting))
+            .alert("Thank You!", isPresented: $showingSubmitAlert) {
+                Button("OK", role: .cancel) {
+                    form = AirportPickupForm() // Reset form
+                    isPresented = false
+                }
+            } message: {
+                Text("Your airport pickup request has been submitted successfully.")
+            }
+            .alert("Error", isPresented: $showingErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
             .alert("Image Upload Instructions", isPresented: $showingImageInfo) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -551,13 +614,29 @@ struct AirportPickupFormView: View {
             } message: {
                 Text("I WAIVE, RELEASE, AND DISCHARGE from any and all liability, including but not limited to, liability arising from the negligence or fault of the entities or persons released, for my death, disability, personal injury, property damage, property theft, or actions of any kind.")
             }
+            .interactiveDismissDisabled(isSubmitting)
         }
     }
     
     private func submitForm() {
-        if let url = URL(string: "https://forms.office.com/r/pFCGev576R") {
-            URLHandler.open(url) { _ in
-                isPresented = false
+        guard !isSubmitting else { return }
+        
+        // Dismiss keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                     to: nil, 
+                                     from: nil, 
+                                     for: nil)
+        
+        isSubmitting = true
+        Task {
+            do {
+                try await formsService.submitAirportPickupForm(form)
+                isSubmitting = false
+                showingSubmitAlert = true
+            } catch {
+                isSubmitting = false
+                errorMessage = error.localizedDescription
+                showingErrorAlert = true
             }
         }
     }

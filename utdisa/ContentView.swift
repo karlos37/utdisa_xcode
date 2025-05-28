@@ -24,8 +24,19 @@ struct ContentView: View {
                 .tabItem {
                     Label("Forms", systemImage: "doc.text")
                 }
+            
+            HousingMarketplaceTab()
+                .tabItem {
+                    Label("Housing", systemImage: "house")
+                }
         }
         .tint(ISATheme.saffron)
+    }
+}
+
+struct HousingMarketplaceTab: View {
+    var body: some View {
+        HousingMarketplaceView()
     }
 }
 

@@ -34,45 +34,109 @@ struct LoginView: View {
     @Binding var showAuthFlow: Bool
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Login")
-                .font(.title)
-                .bold()
-            TextField("UTD Email", text: $email)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            if let error = errorMessage {
-                Text(error).foregroundColor(.red)
+        VStack(spacing: 0) {
+            Spacer(minLength: 32)
+            // Logo or Icon
+            Image(systemName: "house.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
+                .foregroundColor(ISATheme.saffron)
+                .padding(.bottom, 16)
+
+            VStack(spacing: 24) {
+                Text("Welcome Back!")
+                    .font(.largeTitle)
+                    .bold()
+                    .foregroundColor(ISATheme.navy)
+                    .padding(.bottom, 4)
+                Text("Sign in to your UTD ISA account")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 8)
+
+                VStack(spacing: 16) {
+                    TextField("UTD Email", text: $email)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(ISATheme.saffron.opacity(0.3), lineWidth: 1)
+                        )
+                    SecureField("Password", text: $password)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(ISATheme.saffron.opacity(0.3), lineWidth: 1)
+                        )
+                }
+
+                if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.subheadline)
+                        .padding(.top, 4)
+                }
+                if showSuccess {
+                    Text("Login successful!")
+                        .foregroundColor(.green)
+                        .font(.headline)
+                        .padding(.top, 4)
+                }
+
+                Button(action: login) {
+                    HStack {
+                        Spacer()
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text("Login")
+                                .bold()
+                        }
+                        Spacer()
+                    }
+                }
+                .padding()
+                .background(ISATheme.peacockBlue)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: ISATheme.peacockBlue.opacity(0.15), radius: 6, x: 0, y: 3)
+                .disabled(isLoading)
+
+                HStack {
+                    Button("Forgot Password?") {
+                        showPasswordReset = true
+                        showRegister = false
+                        showLogin = false
+                    }
+                    .foregroundColor(ISATheme.peacockBlue)
+                    Spacer()
+                    Button("Register") {
+                        showRegister = true
+                        showLogin = false
+                    }
+                    .foregroundColor(ISATheme.saffron)
+                }
+                .font(.subheadline)
+                .padding(.top, 4)
             }
-            if showSuccess {
-                Text("Login successful!")
-                    .foregroundColor(.green)
-                    .font(.headline)
-            }
-            Button("Login") {
-                login()
-            }
-            .disabled(isLoading)
-            .padding()
-            .background(ISATheme.peacockBlue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
-            Button("Forgot Password?") {
-                showPasswordReset = true
-                showRegister = false
-                showLogin = false
-            }
-            .foregroundColor(ISATheme.peacockBlue)
-            Button("Don't have an account? Register") {
-                showRegister = true
-                showLogin = false
-            }
-            .foregroundColor(ISATheme.saffron)
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white.opacity(0.97))
+                    .shadow(color: ISATheme.navy.opacity(0.08), radius: 12, x: 0, y: 6)
+            )
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+            Spacer()
         }
-        .padding()
+        .background(ISATheme.indianGradient.ignoresSafeArea())
     }
     
     private func login() {

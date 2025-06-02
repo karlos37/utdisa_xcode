@@ -23,6 +23,7 @@ struct HousingListingFormView: View {
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
     @State private var showSuccessAlert = false
+    var userId: UUID?
 
     let apartmentTypes = ["1b1b", "2b2b", "2b2.5b", "3b2b", "3b3b"]
     let availabilities = ["whole", "room"]
@@ -147,7 +148,7 @@ struct HousingListingFormView: View {
             }
             let listing = HousingListing(
                 id: nil,
-                user_id: nil, // Set if you have auth
+                user_id: userId,
                 apartment_name: apartmentName,
                 apartment_type: apartmentType,
                 availability: availability,

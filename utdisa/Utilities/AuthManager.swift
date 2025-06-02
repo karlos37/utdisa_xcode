@@ -7,6 +7,7 @@ class AuthManager: ObservableObject {
     @Published var userEmail: String? = nil
     @Published var isVerified: Bool = false
     @Published var displayName: String? = nil
+    @Published var userId: UUID? = nil
     private var cancellables = Set<AnyCancellable>()
     
     struct Profile: Decodable {
@@ -33,6 +34,13 @@ class AuthManager: ObservableObject {
                     self.userEmail = email
                     self.isVerified = user.emailConfirmedAt != nil
                     self.displayName = profile?.full_name
+                    if let uuid = user.id as? UUID {
+                        self.userId = uuid
+                    } else if let uuid = UUID(uuidString: user.id.uuidString) {
+                        self.userId = uuid
+                    } else {
+                        self.userId = nil
+                    }
                 }
             } else {
                 DispatchQueue.main.async {
@@ -40,6 +48,7 @@ class AuthManager: ObservableObject {
                     self.userEmail = nil
                     self.isVerified = false
                     self.displayName = nil
+                    self.userId = nil
                 }
             }
         } catch {
@@ -48,6 +57,7 @@ class AuthManager: ObservableObject {
                 self.userEmail = nil
                 self.isVerified = false
                 self.displayName = nil
+                self.userId = nil
             }
         }
     }

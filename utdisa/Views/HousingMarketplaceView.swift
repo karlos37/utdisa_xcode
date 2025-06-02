@@ -7,6 +7,9 @@ struct HousingMarketplaceView: View {
     @State private var errorMessage: String?
     @State private var showListingForm = false
     @State private var showSuccessAlert = false
+    @State private var selectedTab = 0 // 0: All Listings, 1: My Listings
+    @State private var showDeleteAlert = false
+    @State private var listingToDelete: HousingListing? = nil
     @EnvironmentObject var authManager: AuthManager
     @Binding var showAuthFlow: Bool
     @Binding var authPurpose: AuthPurpose?
@@ -29,27 +32,52 @@ struct HousingMarketplaceView: View {
                                 .background(ISATheme.saffron)
                                 .cornerRadius(8)
                         }
-                    } else if listings.isEmpty {
-                        Text("No listings found.")
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 20) {
-                                Text("🏠 Housing Marketplace")
-                                    .font(ISATheme.TextStyle.title)
-                                    .foregroundColor(ISATheme.peacockBlue)
-                                    .padding(.leading)
-                                    .padding(.top, 8)
-                                Divider()
-                                    .background(ISATheme.saffron)
-                                    .padding(.horizontal)
-                                ForEach(listings) { listing in
-                                    HousingListingCard(listing: listing)
-                                        .padding(.horizontal)
+                        VStack(spacing: 0) {
+                            Picker("View", selection: $selectedTab) {
+                                Text("All Listings").tag(0)
+                                Text("My Listings").tag(1)
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .padding([.horizontal, .top])
+
+                            Divider().padding(.bottom, 4)
+
+                            let filteredListings: [HousingListing] = {
+                                if selectedTab == 1, let userId = authManager.userId {
+                                    return listings.filter { $0.user_id == userId }
+                                } else {
+                                    return listings
+                                }
+                            }()
+
+                            if filteredListings.isEmpty {
+                                Text(selectedTab == 1 ? "You have not posted any listings." : "No listings found.")
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            } else {
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: 20) {
+                                        Text("🏠 Housing Marketplace")
+                                            .font(ISATheme.TextStyle.title)
+                                            .foregroundColor(ISATheme.peacockBlue)
+                                            .padding(.leading)
+                                            .padding(.top, 8)
+                                        Divider()
+                                            .background(ISATheme.saffron)
+                                            .padding(.horizontal)
+                                        ForEach(filteredListings) { listing in
+                                            HousingListingCard(
+                                                listing: listing,
+                                                showDelete: selectedTab == 1 && listing.user_id == authManager.userId,
+                                                onDelete: { listingToDelete = listing; showDeleteAlert = true }
+                                            )
+                                            .padding(.horizontal)
+                                        }
+                                    }
+                                    .padding(.vertical)
                                 }
                             }
-                            .padding(.vertical)
                         }
                     }
                 }
@@ -77,10 +105,25 @@ struct HousingMarketplaceView: View {
                 fetchListings()
                 showSuccessAlert = true
             }) {
-                HousingListingFormView()
+                HousingListingFormView(userId: authManager.userId)
             }
             .alert(isPresented: $showSuccessAlert) {
                 Alert(title: Text("Success"), message: Text("Listing uploaded successfully!"), dismissButton: .default(Text("OK")))
+            }
+            .alert(isPresented: $showDeleteAlert) {
+                Alert(
+                    title: Text("Delete Listing"),
+                    message: Text("Are you sure you want to delete this listing? This action cannot be undone."),
+                    primaryButton: .destructive(Text("Delete")) {
+                        if let listing = listingToDelete {
+                            deleteListing(listing)
+                        }
+                        listingToDelete = nil
+                    },
+                    secondaryButton: .cancel {
+                        listingToDelete = nil
+                    }
+                )
             }
             .onAppear(perform: fetchListings)
         }
@@ -111,10 +154,32 @@ struct HousingMarketplaceView: View {
             }
         }
     }
+    
+    private func deleteListing(_ listing: HousingListing) {
+        guard let id = listing.id else { return }
+        let client = SupabaseManager.shared.client
+        isLoading = true
+        Task {
+            do {
+                _ = try await client.database.from("housing_listings").delete().eq("id", value: id.uuidString).execute()
+                DispatchQueue.main.async {
+                    self.listings.removeAll { $0.id == id }
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
+            }
+        }
+    }
 }
 
 struct HousingListingCard: View {
     let listing: HousingListing
+    var showDelete: Bool = false
+    var onDelete: (() -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -151,42 +216,58 @@ struct HousingListingCard: View {
                     .padding(.vertical, 4)
                 }
             }
-            Text(listing.apartment_name)
-                .font(ISATheme.TextStyle.heading)
-                .foregroundColor(ISATheme.peacockBlue)
-            Text("Type: \(listing.apartment_type) | \(listing.availability.capitalized)")
-                .font(ISATheme.TextStyle.subheading)
-                .foregroundColor(.secondary)
-            Text("Rent: $\(String(format: "%.2f", listing.rent)) / month")
-                .font(ISATheme.TextStyle.subheading)
-                .foregroundColor(ISATheme.green)
-            if let aptNum = listing.apartment_number, !aptNum.isEmpty {
-                Text("Apt #: \(aptNum)")
-                    .font(ISATheme.TextStyle.body)
-            }
-            Text("Lease: \(listing.lease_type.capitalized)")
-                .font(ISATheme.TextStyle.body)
-            if listing.lease_type == "existing", let months = listing.lease_months_left {
-                Text("Months left: \(months)")
-                    .font(ISATheme.TextStyle.body)
-            }
-            if listing.is_temporary {
-                Text("Temporary Housing Available")
-                    .font(ISATheme.TextStyle.body)
-                    .foregroundColor(ISATheme.saffron)
-                if let from = listing.available_from, let to = listing.available_to {
-                    Text("From \(formattedDate(from)) to \(formattedDate(to))")
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(listing.apartment_name)
+                        .font(ISATheme.TextStyle.heading)
+                        .foregroundColor(ISATheme.peacockBlue)
+                    Text("Type: \(listing.apartment_type) | \(listing.availability.capitalized)")
+                        .font(ISATheme.TextStyle.subheading)
+                        .foregroundColor(.secondary)
+                    Text("Rent: $\(String(format: "%.2f", listing.rent)) / month")
+                        .font(ISATheme.TextStyle.subheading)
+                        .foregroundColor(ISATheme.green)
+                    if let aptNum = listing.apartment_number, !aptNum.isEmpty {
+                        Text("Apt #: \(aptNum)")
+                            .font(ISATheme.TextStyle.body)
+                    }
+                    Text("Lease: \(listing.lease_type.capitalized)")
                         .font(ISATheme.TextStyle.body)
+                    if listing.lease_type == "existing", let months = listing.lease_months_left {
+                        Text("Months left: \(months)")
+                            .font(ISATheme.TextStyle.body)
+                    }
+                    if listing.is_temporary {
+                        Text("Temporary Housing Available")
+                            .font(ISATheme.TextStyle.body)
+                            .foregroundColor(ISATheme.saffron)
+                        if let from = listing.available_from, let to = listing.available_to {
+                            Text("From \(formattedDate(from)) to \(formattedDate(to))")
+                                .font(ISATheme.TextStyle.body)
+                        }
+                        if let perDay = listing.rent_per_day {
+                            Text("$\(String(format: "%.2f", perDay)) per day")
+                                .font(ISATheme.TextStyle.body)
+                        }
+                    }
+                    if let created = listing.created_at {
+                        Text("Posted: \(relativeDate(created))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
-                if let perDay = listing.rent_per_day {
-                    Text("$\(String(format: "%.2f", perDay)) per day")
-                        .font(ISATheme.TextStyle.body)
+                Spacer()
+                if showDelete, let onDelete = onDelete {
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                            .padding(8)
+                            .background(Color(.systemGray6))
+                            .clipShape(Circle())
+                    }
                 }
-            }
-            if let created = listing.created_at {
-                Text("Posted: \(relativeDate(created))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .padding()

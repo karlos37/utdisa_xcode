@@ -42,7 +42,7 @@ struct ContentView: View {
         }
         .tint(ISATheme.saffron)
         .sheet(isPresented: $showAuthFlow) {
-            AuthFlowView(authManager: authManager)
+            AuthFlowView(authManager: authManager, showAuthFlow: $showAuthFlow)
         }
     }
 }

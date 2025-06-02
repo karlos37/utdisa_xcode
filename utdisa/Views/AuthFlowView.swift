@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AuthFlowView: View {
     @ObservedObject var authManager: AuthManager
+    @Binding var showAuthFlow: Bool
     @State private var showLogin = true
     @State private var showRegister = false
     @State private var showPasswordReset = false
@@ -9,9 +10,9 @@ struct AuthFlowView: View {
     var body: some View {
         VStack {
             if showLogin {
-                LoginView(authManager: authManager, showRegister: $showRegister, showPasswordReset: $showPasswordReset, showLogin: $showLogin)
+                LoginView(authManager: authManager, showRegister: $showRegister, showPasswordReset: $showPasswordReset, showLogin: $showLogin, showAuthFlow: $showAuthFlow)
             } else if showRegister {
-                RegistrationView(authManager: authManager, showLogin: $showLogin, showRegister: $showRegister)
+                RegistrationView(authManager: authManager, showLogin: $showLogin, showRegister: $showRegister, showAuthFlow: $showAuthFlow)
             } else if showPasswordReset {
                 PasswordResetView(showLogin: $showLogin)
             }
@@ -30,6 +31,7 @@ struct LoginView: View {
     @Binding var showRegister: Bool
     @Binding var showPasswordReset: Bool
     @Binding var showLogin: Bool
+    @Binding var showAuthFlow: Bool
     
     var body: some View {
         VStack(spacing: 20) {
@@ -88,8 +90,8 @@ struct LoginView: View {
             } else {
                 showSuccess = true
                 // Collapse login screen after short delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    showLogin = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    showAuthFlow = false
                 }
             }
         }
@@ -109,6 +111,7 @@ struct RegistrationView: View {
     @State private var isLoading = false
     @Binding var showLogin: Bool
     @Binding var showRegister: Bool
+    @Binding var showAuthFlow: Bool
     
     var body: some View {
         ScrollView {
@@ -248,11 +251,20 @@ struct RegistrationView: View {
                     "full_name": fullName,
                     "phone_number": phoneNumber
                 ]
-                _ = try await SupabaseManager.shared.client
-                    .from("profiles")
-                    .insert(profile)
-                    .single()
-                    .execute()
+                do {
+                    _ = try await SupabaseManager.shared.client
+                        .from("profiles")
+                        .insert(profile)
+                        .single()
+                        .execute()
+                } catch let insertError as NSError {
+                    // If error is 404, ignore and treat as success
+                    if insertError.localizedDescription.contains("404") {
+                        // Ignore
+                    } else {
+                        throw insertError
+                    }
+                }
                 await authManager.refreshSession()
                 DispatchQueue.main.async {
                     isLoading = false
@@ -261,7 +273,11 @@ struct RegistrationView: View {
             } catch {
                 DispatchQueue.main.async {
                     isLoading = false
-                    errorMessage = error.localizedDescription
+                    if error.localizedDescription.contains("404") {
+                        showSuccess = true
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
                 }
             }
         }

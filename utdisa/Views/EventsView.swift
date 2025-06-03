@@ -1,27 +1,8 @@
 import SwiftUI
 
 struct EventsView: View {
-    @State private var events: [Event] = [
-        Event(
-            title: "ISA Independence Day",
-            startDate: Calendar.current.date(from: DateComponents(year: 2024, month: 8, day: 15, hour: 10))!,
-            description: "Join us in celebrating India's Independence Day with cultural performances, flag hoisting ceremony, and traditional Indian refreshments.",
-            location: "UTD Plinth",
-            locationURL: URL(string: "https://maps.app.goo.gl/U2Y7igWRTvVXF1N1A"),
-            registrationURL: URL(string: "https://utdallas.presence.io/organization/indian-students-association"),
-            posterImageName: "independence_day_poster"
-        ),
-        Event(
-            title: "ISA Ganesh Chaturthi",
-            startDate: Calendar.current.date(from: DateComponents(year: 2024, month: 8, day: 27, hour: 9))!,
-            endDate: Calendar.current.date(from: DateComponents(year: 2024, month: 8, day: 28, hour: 17))!,
-            description: "Celebrate the auspicious festival of Ganesh Chaturthi with ISA. Join us for aarti, prasad distribution, and cultural activities.",
-            location: "UTD Chess Plaza",
-            locationURL: URL(string: "https://maps.app.goo.gl/mnujc6rGEETHx1S87"),
-            registrationURL: URL(string: "https://utdallas.presence.io/organization/indian-students-association"),
-            posterImageName: "ganesh_chaturthi_poster"
-        )
-    ]
+    @State private var events: [Event] = Event.sampleEvents
+    @State private var expandedEventID: UUID? = nil
     
     var body: some View {
         NavigationView {
@@ -29,6 +10,8 @@ struct EventsView: View {
                 ISATheme.indianGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: ISATheme.Padding.large) {
+                        Color.clear.frame(height: 1)
+
                         // Header
                         VStack(spacing: ISATheme.Padding.medium) {
                             Text("Upcoming Events")
@@ -43,9 +26,21 @@ struct EventsView: View {
                         .padding(.top)
                         
                         // Events List
-                        LazyVStack(spacing: ISATheme.Padding.medium) {
+                        VStack(spacing: ISATheme.Padding.medium) {
                             ForEach(events) { event in
-                                EventCard(event: event)
+                                EventCard(
+                                    event: event,
+                                    isExpanded: expandedEventID == event.id,
+                                    onToggle: {
+                                        withAnimation(.spring()) {
+                                            if expandedEventID == event.id {
+                                                expandedEventID = nil
+                                            } else {
+                                                expandedEventID = event.id
+                                            }
+                                        }
+                                    }
+                                )
                             }
                         }
                         .padding(.horizontal)
@@ -59,7 +54,8 @@ struct EventsView: View {
 
 struct EventCard: View {
     let event: Event
-    @State private var isExpanded = false
+    let isExpanded: Bool
+    let onToggle: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -68,31 +64,33 @@ struct EventCard: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(height: 200)
+                .background(Color.red.opacity(0.2))
                 .clipped()
-                .overlay(
-                    // Date Badge
-                    VStack {
-                        Text(event.dateRangeText)
-                            .font(ISATheme.TextStyle.subheading)
-                            .foregroundColor(ISATheme.spiceRed)
-                        Text(event.timeText)
-                            .font(ISATheme.TextStyle.body)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.white)
-                            .shadow(radius: 5)
-                    )
-                    .padding(),
-                    alignment: .topLeading
-                )
+                // .overlay(
+                //     // Date Badge
+                //     VStack {
+                //         Text(event.dateRangeText)
+                //             .font(ISATheme.TextStyle.subheading)
+                //             .foregroundColor(ISATheme.spiceRed)
+                //         Text(event.timeText)
+                //             .font(ISATheme.TextStyle.body)
+                //             .foregroundColor(.secondary)
+                //     }
+                //     .padding()
+                //     .background(
+                //         RoundedRectangle(cornerRadius: 10)
+                //             .fill(.white)
+                //             .shadow(radius: 5)
+                //     )
+                //     .padding(),
+                //     alignment: .topLeading
+                // )
             
             VStack(alignment: .leading, spacing: ISATheme.Padding.medium) {
                 Text(event.title)
                     .font(ISATheme.TextStyle.heading)
                     .foregroundColor(ISATheme.navy)
+                    .onAppear { print("Rendering event card for: \(event.title)") }
                 
                 HStack {
                     if let locationURL = event.locationURL {
@@ -105,11 +103,7 @@ struct EventCard: View {
                     
                     Spacer()
                     
-                    Button {
-                        withAnimation(.spring()) {
-                            isExpanded.toggle()
-                        }
-                    } label: {
+                    Button(action: onToggle) {
                         Image(systemName: "chevron.down")
                             .foregroundColor(ISATheme.saffron)
                             .rotationEffect(.degrees(isExpanded ? 180 : 0))

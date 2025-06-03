@@ -40,6 +40,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle")
                 }
+            
+            AboutISAView()
+                .tabItem {
+                    Label("About", systemImage: "info.circle")
+                }
         }
         .tint(ISATheme.saffron)
         .sheet(isPresented: $showAuthFlow) {

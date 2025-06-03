@@ -48,11 +48,7 @@ struct FormsView: View {
                     .padding(.horizontal)
                 }
             }
-            .background(
-                ISATheme.indianGradient
-                    .opacity(0.1)
-                    .ignoresSafeArea()
-            )
+            .background(Color.white.ignoresSafeArea())
             .navigationTitle("Forms")
             .sheet(item: $selectedForm) { form in
                 switch form {

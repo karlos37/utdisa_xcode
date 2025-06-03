@@ -52,8 +52,6 @@ struct AirportPickupForm {
         !utdEmail.isEmpty &&
         !firstName.isEmpty &&
         !lastName.isEmpty &&
-        !whatsappNumber.isEmpty &&
-        !emergencyContact.isEmpty &&
         isSpring25Student &&
         !acceptanceLetterImageURL.isEmpty &&
         !studentPhotoURL.isEmpty &&
@@ -109,8 +107,7 @@ struct SponsorForm {
     var isValid: Bool {
         !companyName.isEmpty &&
         !contactName.isEmpty &&
-        !email.isEmpty &&
-        !phone.isEmpty
+        !email.isEmpty
     }
     
     enum SponsorshipTier: String, CaseIterable {

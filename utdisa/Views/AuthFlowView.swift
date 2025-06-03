@@ -109,6 +109,22 @@ struct LoginView: View {
                 .shadow(color: ISATheme.peacockBlue.opacity(0.15), radius: 6, x: 0, y: 3)
                 .disabled(isLoading)
 
+                // DEMO LOGIN BUTTON
+                Button(action: demoLogin) {
+                    HStack {
+                        Spacer()
+                        Text("Demo Login")
+                            .bold()
+                        Spacer()
+                    }
+                }
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: Color.green.opacity(0.15), radius: 6, x: 0, y: 3)
+                .disabled(isLoading)
+
                 HStack {
                     Button("Forgot Password?") {
                         showPasswordReset = true
@@ -154,6 +170,27 @@ struct LoginView: View {
             } else {
                 showSuccess = true
                 // Collapse login screen after short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    showAuthFlow = false
+                }
+            }
+        }
+    }
+    
+    // DEMO LOGIN FUNCTION
+    private func demoLogin() {
+        errorMessage = nil
+        showSuccess = false
+        isLoading = true
+        // Use demo credentials (hardcoded)
+        let demoEmail = "demo@utdisa.com"
+        let demoPassword = "demopassword"
+        authManager.login(email: demoEmail, password: demoPassword) { error in
+            isLoading = false
+            if let error = error {
+                errorMessage = error
+            } else {
+                showSuccess = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     showAuthFlow = false
                 }

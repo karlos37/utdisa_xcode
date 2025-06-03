@@ -122,21 +122,6 @@ struct EventCard: View {
                         Text(event.description)
                             .font(ISATheme.TextStyle.body)
                             .foregroundColor(.secondary)
-                        
-                        if let registrationURL = event.registrationURL {
-                            Link(destination: registrationURL) {
-                                HStack {
-                                    Text("Register Now")
-                                    Image(systemName: "arrow.right")
-                                }
-                                .font(ISATheme.TextStyle.body.bold())
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(ISATheme.saffron)
-                                .cornerRadius(10)
-                            }
-                        }
                     }
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }

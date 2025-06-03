@@ -26,6 +26,7 @@ struct ContentView: View {
                 }
             
             FormsView(showAuthFlow: $showAuthFlow, authPurpose: $authPurpose)
+                .environmentObject(authManager)
                 .tabItem {
                     Label("Forms", systemImage: "doc.text")
                 }

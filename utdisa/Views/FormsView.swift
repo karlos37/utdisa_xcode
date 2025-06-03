@@ -6,7 +6,6 @@ struct FormsView: View {
     @Binding var authPurpose: AuthPurpose?
     private let forms: [FormType] = [.airportPickup, .feedback, .sponsor]
     @State private var selectedForm: FormType?
-    @State private var showInAppForm = false
     @State private var airportPickupForm = AirportPickupForm()
     @State private var feedbackForm = FeedbackForm()
     @State private var sponsorForm = SponsorForm()
@@ -42,7 +41,6 @@ struct FormsView: View {
                                     showAuthFlow = true
                                 } else {
                                     selectedForm = form
-                                    showInAppForm = true
                                 }
                             }
                         }
@@ -56,16 +54,23 @@ struct FormsView: View {
                     .ignoresSafeArea()
             )
             .navigationTitle("Forms")
-            .sheet(isPresented: $showInAppForm) {
-                if let form = selectedForm {
-                    switch form {
-                    case .airportPickup:
-                        AirportPickupFormView(form: $airportPickupForm, isPresented: $showInAppForm)
-                    case .feedback:
-                        FeedbackFormView(form: $feedbackForm, isPresented: $showInAppForm)
-                    case .sponsor:
-                        SponsorFormView(form: $sponsorForm, isPresented: $showInAppForm)
-                    }
+            .sheet(item: $selectedForm) { form in
+                switch form {
+                case .airportPickup:
+                    AirportPickupFormView(form: $airportPickupForm, isPresented: Binding(
+                        get: { selectedForm != nil },
+                        set: { if !$0 { selectedForm = nil } }
+                    ))
+                case .feedback:
+                    FeedbackFormView(form: $feedbackForm, isPresented: Binding(
+                        get: { selectedForm != nil },
+                        set: { if !$0 { selectedForm = nil } }
+                    ))
+                case .sponsor:
+                    SponsorFormView(form: $sponsorForm, isPresented: Binding(
+                        get: { selectedForm != nil },
+                        set: { if !$0 { selectedForm = nil } }
+                    ))
                 }
             }
             .alert("Error", isPresented: $showErrorAlert) {
@@ -86,7 +91,6 @@ struct FormsView: View {
             }
         } else {
             selectedForm = form
-            showInAppForm = true
         }
     }
 }
@@ -330,89 +334,108 @@ struct SponsorFormView: View {
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     private let formsService = FormsService()
+    @State private var viewLoadError: String? = nil
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Company Information")) {
-                    TextField("Company Name", text: $form.companyName)
-                    
-                    TextField("Contact Name", text: $form.contactName)
-                        .textContentType(.name)
-                    
-                    TextField("Email", text: $form.email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                    
-                    TextField("Phone", text: $form.phone)
-                        .textContentType(.telephoneNumber)
-                        .keyboardType(.phonePad)
-                }
-                
-                Section(header: Text("Sponsorship Details")) {
-                    Picker("Sponsorship Tier", selection: $form.sponsorshipTier) {
-                        ForEach(SponsorForm.SponsorshipTier.allCases, id: \.self) { tier in
-                            Text("\(tier.rawValue) (\(tier.amount))").tag(tier)
-                        }
-                    }
-                    
-                    Button("View Tier Benefits") {
-                        selectedTierForInfo = form.sponsorshipTier
-                        showingTierInfo = true
-                    }
-                    
-                    TextEditor(text: $form.message)
-                        .frame(height: 100)
-                        .placeholder(when: form.message.isEmpty) {
-                            Text("Additional message or requirements...")
-                                .foregroundColor(.gray)
-                    }
-                }
-                
-                Section {
-                    Button(action: submitForm) {
-                        HStack {
-                            Text("Submit Request")
-                                .frame(maxWidth: .infinity)
-                            if isSubmitting {
-                                Spacer()
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                        }
-                        .foregroundColor(.white)
-                    }
-                    .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
-                    .disabled(!form.isValid || isSubmitting)
+            Group {
+                if let viewLoadError = viewLoadError {
+                    Text("Error loading form: \(viewLoadError)")
+                        .foregroundColor(.red)
+                } else {
+                    formBody
                 }
             }
-            .navigationTitle("Become a Sponsor")
-            .navigationBarItems(trailing: Button("Cancel") {
+            .onAppear {
+                do {
+                    _ = form.companyName // Access to trigger any potential error
+                } catch {
+                    viewLoadError = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    var formBody: some View {
+        Form {
+            Section(header: Text("Company Information")) {
+                TextField("Company Name", text: $form.companyName)
+                
+                TextField("Contact Name", text: $form.contactName)
+                    .textContentType(.name)
+                
+                TextField("Email", text: $form.email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                
+                TextField("Phone", text: $form.phone)
+                    .textContentType(.telephoneNumber)
+                    .keyboardType(.phonePad)
+            }
+            
+            Section(header: Text("Sponsorship Details")) {
+                Picker("Sponsorship Tier", selection: $form.sponsorshipTier) {
+                    ForEach(SponsorForm.SponsorshipTier.allCases, id: \.self) { tier in
+                        Text("\(tier.rawValue) (\(tier.amount))").tag(tier)
+                    }
+                }
+                
+                Button("View Tier Benefits") {
+                    selectedTierForInfo = form.sponsorshipTier
+                    showingTierInfo = true
+                }
+                
+                TextEditor(text: $form.message)
+                    .frame(height: 100)
+                    .placeholder(when: form.message.isEmpty) {
+                        Text("Additional message or requirements...")
+                            .foregroundColor(.gray)
+                }
+            }
+            
+            Section {
+                Button(action: submitForm) {
+                    HStack {
+                        Text("Submit Request")
+                            .frame(maxWidth: .infinity)
+                        if isSubmitting {
+                            Spacer()
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+                    .foregroundColor(.white)
+                }
+                .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
+                .disabled(!form.isValid || isSubmitting)
+            }
+        }
+        .navigationTitle("Become a Sponsor")
+        .navigationBarItems(trailing: Button("Cancel") {
+            isPresented = false
+        }
+        .disabled(isSubmitting))
+        .alert("Thank You!", isPresented: $showingSubmitAlert) {
+            Button("OK", role: .cancel) {
+                form = SponsorForm() // Reset form
                 isPresented = false
             }
-            .disabled(isSubmitting))
-            .alert("Thank You!", isPresented: $showingSubmitAlert) {
-                Button("OK", role: .cancel) {
-                    form = SponsorForm() // Reset form
-                    isPresented = false
-                }
-            } message: {
-                Text("Your sponsorship request has been submitted successfully.")
-            }
-            .alert("Error", isPresented: $showingErrorAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
-            }
-            .alert("Tier Benefits", isPresented: $showingTierInfo) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                if let tier = selectedTierForInfo {
-                    Text("\(tier.rawValue) Tier (\(tier.amount))\n\nBenefits:\n\(tier.benefits)")
-                }
-            }
-            .interactiveDismissDisabled(isSubmitting)
+        } message: {
+            Text("Your sponsorship request has been submitted successfully.")
         }
+        .alert("Error", isPresented: $showingErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .alert("Tier Benefits", isPresented: $showingTierInfo) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            if let tier = selectedTierForInfo {
+                Text("\(tier.rawValue) Tier (\(tier.amount))\n\nBenefits:\n\(tier.benefits)")
+            }
+        }
+        .interactiveDismissDisabled(isSubmitting)
     }
     
     private func submitForm() {
@@ -462,168 +485,187 @@ struct AirportPickupFormView: View {
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     private let formsService = FormsService()
+    @State private var viewLoadError: String? = nil
     
     var body: some View {
         NavigationView {
-            Form {
-                // Student Verification
-                Section(header: Text("Student Verification")) {
-                    Toggle("I am a Fall '25 Incoming Student", isOn: $form.isSpring25Student)
-                    
-                    if form.isSpring25Student {
-                        TextField("Acceptance Letter Image URL", text: $form.acceptanceLetterImageURL)
-                            .textContentType(.URL)
-                            .keyboardType(.URL)
-                        
-                        Button("How to upload images?") {
-                            showingImageInfo = true
-                        }
-                        .foregroundColor(ISATheme.peacockBlue)
-                    }
+            Group {
+                if let viewLoadError = viewLoadError {
+                    Text("Error loading form: \(viewLoadError)")
+                        .foregroundColor(.red)
+                } else {
+                    formBody
                 }
+            }
+            .onAppear {
+                do {
+                    _ = form.firstName // Access to trigger any potential error
+                } catch {
+                    viewLoadError = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    var formBody: some View {
+        Form {
+            // Student Verification
+            Section(header: Text("Student Verification")) {
+                Toggle("I am a Fall '25 Incoming Student", isOn: $form.isSpring25Student)
                 
-                // Basic Information
-                Section(header: Text("Student Information")) {
-                    TextField("UTD ID", text: $form.utdId)
-                        .keyboardType(.numberPad)
-                    
-                    TextField("UTD Email (NetID)", text: $form.utdEmail)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                    
-                    TextField("First Name", text: $form.firstName)
-                        .textContentType(.givenName)
-                    
-                    TextField("Last Name", text: $form.lastName)
-                        .textContentType(.familyName)
-                    
-                    TextField("Email", text: $form.email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                    
-                    Picker("Gender", selection: $form.gender) {
-                        ForEach(AirportPickupForm.Gender.allCases, id: \.self) { gender in
-                            Text(gender.rawValue).tag(gender)
-                        }
-                    }
-                    
-                    TextField("Student Photo URL", text: $form.studentPhotoURL)
+                if form.isSpring25Student {
+                    TextField("Acceptance Letter Image URL", text: $form.acceptanceLetterImageURL)
                         .textContentType(.URL)
                         .keyboardType(.URL)
-                }
-                
-                // Contact Information
-                Section(header: Text("Contact Information")) {
-                    TextField("WhatsApp Number (91xxxxxxxxxx)", text: $form.whatsappNumber)
-                        .keyboardType(.numberPad)
-                        .onChange(of: form.whatsappNumber) { newValue in
-                            form.whatsappNumber = AirportPickupForm.formatPhoneNumber(newValue)
-                        }
                     
-                    TextField("Emergency Contact (91xxxxxxxxxx)", text: $form.emergencyContact)
-                        .keyboardType(.numberPad)
-                        .onChange(of: form.emergencyContact) { newValue in
-                            form.emergencyContact = AirportPickupForm.formatPhoneNumber(newValue)
-                        }
-                }
-                
-                // Flight Details
-                Section(header: Text("Flight Details")) {
-                    TextField("Flight Number", text: $form.flightNumber)
-                        .textCase(.uppercase)
-                    
-                    DatePicker("Arrival Date", selection: $form.arrivalDate, displayedComponents: .date)
-                    
-                    DatePicker("Arrival Time", selection: $form.arrivalTime, displayedComponents: .hourAndMinute)
-                    
-                    Picker("Arrival Airport", selection: $form.arrivalAirport) {
-                        ForEach(AirportPickupForm.DallasAirport.allCases, id: \.self) { airport in
-                            Text(airport.rawValue).tag(airport)
-                        }
-                    }
-                    
-                    TextField("Port of Entry Airport", text: $form.portOfEntryAirport)
-                        .textContentType(.location)
-                    
-                    TextField("Itinerary Image URL", text: $form.itineraryImageURL)
-                        .textContentType(.URL)
-                        .keyboardType(.URL)
-                }
-                
-                // Baggage Information
-                Section(header: Text("Baggage Information")) {
-                    Stepper("Check-in Bags: \(form.checkInBagsCount)", value: $form.checkInBagsCount, in: 0...5)
-                    Stepper("Cabin Bags: \(form.cabinBagsCount)", value: $form.cabinBagsCount, in: 0...3)
-                }
-                
-                // Drop-off Location
-                Section(header: Text("Drop-off Location")) {
-                    TextField("Drop-off Address", text: $form.dropOffLocation)
-                        .textContentType(.fullStreetAddress)
-                }
-                
-                // Terms and Agreements
-                Section(header: Text("Terms and Agreements")) {
-                    Toggle("I agree to the Terms and Conditions", isOn: $form.agreesToTerms)
-                    
-                    Toggle("I agree to the Liability Waiver", isOn: $form.agreesToWaiver)
-                    
-                    Button("View Waiver") {
-                        showingWaiverText = true
+                    Button("How to upload images?") {
+                        showingImageInfo = true
                     }
                     .foregroundColor(ISATheme.peacockBlue)
                 }
-                
-                // Submit Button
-                Section {
-                    Button(action: submitForm) {
-                        HStack {
-                            Text("Submit Request")
-                                .frame(maxWidth: .infinity)
-                            if isSubmitting {
-                                Spacer()
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                        }
-                        .foregroundColor(.white)
-                    }
-                    .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
-                    .disabled(!form.isValid || isSubmitting)
-                }
             }
-            .navigationTitle("Airport Pickup Request")
-            .navigationBarItems(trailing: Button("Cancel") {
+            
+            // Basic Information
+            Section(header: Text("Student Information")) {
+                TextField("UTD ID", text: $form.utdId)
+                    .keyboardType(.numberPad)
+                
+                TextField("UTD Email (NetID)", text: $form.utdEmail)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                
+                TextField("First Name", text: $form.firstName)
+                    .textContentType(.givenName)
+                
+                TextField("Last Name", text: $form.lastName)
+                    .textContentType(.familyName)
+                
+                TextField("Email", text: $form.email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                
+                Picker("Gender", selection: $form.gender) {
+                    ForEach(AirportPickupForm.Gender.allCases, id: \.self) { gender in
+                        Text(gender.rawValue).tag(gender)
+                    }
+                }
+                
+                TextField("Student Photo URL", text: $form.studentPhotoURL)
+                    .textContentType(.URL)
+                    .keyboardType(.URL)
+            }
+            
+            // Contact Information
+            Section(header: Text("Contact Information")) {
+                TextField("WhatsApp Number (91xxxxxxxxxx)", text: $form.whatsappNumber)
+                    .keyboardType(.numberPad)
+                    .onChange(of: form.whatsappNumber) { newValue in
+                        form.whatsappNumber = AirportPickupForm.formatPhoneNumber(newValue)
+                    }
+                
+                TextField("Emergency Contact (91xxxxxxxxxx)", text: $form.emergencyContact)
+                    .keyboardType(.numberPad)
+                    .onChange(of: form.emergencyContact) { newValue in
+                        form.emergencyContact = AirportPickupForm.formatPhoneNumber(newValue)
+                    }
+            }
+            
+            // Flight Details
+            Section(header: Text("Flight Details")) {
+                TextField("Flight Number", text: $form.flightNumber)
+                    .textCase(.uppercase)
+                
+                DatePicker("Arrival Date", selection: $form.arrivalDate, displayedComponents: .date)
+                
+                DatePicker("Arrival Time", selection: $form.arrivalTime, displayedComponents: .hourAndMinute)
+                
+                Picker("Arrival Airport", selection: $form.arrivalAirport) {
+                    ForEach(AirportPickupForm.DallasAirport.allCases, id: \.self) { airport in
+                        Text(airport.rawValue).tag(airport)
+                    }
+                }
+                
+                TextField("Port of Entry Airport", text: $form.portOfEntryAirport)
+                    .textContentType(.location)
+                
+                TextField("Itinerary Image URL", text: $form.itineraryImageURL)
+                    .textContentType(.URL)
+                    .keyboardType(.URL)
+            }
+            
+            // Baggage Information
+            Section(header: Text("Baggage Information")) {
+                Stepper("Check-in Bags: \(form.checkInBagsCount)", value: $form.checkInBagsCount, in: 0...5)
+                Stepper("Cabin Bags: \(form.cabinBagsCount)", value: $form.cabinBagsCount, in: 0...3)
+            }
+            
+            // Drop-off Location
+            Section(header: Text("Drop-off Location")) {
+                TextField("Drop-off Address", text: $form.dropOffLocation)
+                    .textContentType(.fullStreetAddress)
+            }
+            
+            // Terms and Agreements
+            Section(header: Text("Terms and Agreements")) {
+                Toggle("I agree to the Terms and Conditions", isOn: $form.agreesToTerms)
+                
+                Toggle("I agree to the Liability Waiver", isOn: $form.agreesToWaiver)
+                
+                Button("View Waiver") {
+                    showingWaiverText = true
+                }
+                .foregroundColor(ISATheme.peacockBlue)
+            }
+            
+            // Submit Button
+            Section {
+                Button(action: submitForm) {
+                    HStack {
+                        Text("Submit Request")
+                            .frame(maxWidth: .infinity)
+                        if isSubmitting {
+                            Spacer()
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+                    .foregroundColor(.white)
+                }
+                .listRowBackground(form.isValid && !isSubmitting ? ISATheme.saffron : Color.gray)
+                .disabled(!form.isValid || isSubmitting)
+            }
+        }
+        .navigationTitle("Airport Pickup Request")
+        .navigationBarItems(trailing: Button("Cancel") {
+            isPresented = false
+        }
+        .disabled(isSubmitting))
+        .alert("Thank You!", isPresented: $showingSubmitAlert) {
+            Button("OK", role: .cancel) {
+                form = AirportPickupForm() // Reset form
                 isPresented = false
             }
-            .disabled(isSubmitting))
-            .alert("Thank You!", isPresented: $showingSubmitAlert) {
-                Button("OK", role: .cancel) {
-                    form = AirportPickupForm() // Reset form
-                    isPresented = false
-                }
-            } message: {
-                Text("Your airport pickup request has been submitted successfully.")
-            }
-            .alert("Error", isPresented: $showingErrorAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
-            }
-            .alert("Image Upload Instructions", isPresented: $showingImageInfo) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("1. Go to postimage.org\n2. Upload your image\n3. Copy the 'Direct Link'\n4. Paste the link in the form")
-            }
-            .alert("Liability Waiver", isPresented: $showingWaiverText) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("I WAIVE, RELEASE, AND DISCHARGE from any and all liability, including but not limited to, liability arising from the negligence or fault of the entities or persons released, for my death, disability, personal injury, property damage, property theft, or actions of any kind.")
-            }
-            .interactiveDismissDisabled(isSubmitting)
+        } message: {
+            Text("Your airport pickup request has been submitted successfully.")
         }
+        .alert("Error", isPresented: $showingErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .alert("Image Upload Instructions", isPresented: $showingImageInfo) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("1. Go to postimage.org\n2. Upload your image\n3. Copy the 'Direct Link'\n4. Paste the link in the form")
+        }
+        .alert("Liability Waiver", isPresented: $showingWaiverText) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("I WAIVE, RELEASE, AND DISCHARGE from any and all liability, including but not limited to, liability arising from the negligence or fault of the entities or persons released, for my death, disability, personal injury, property damage, property theft, or actions of any kind.")
+        }
+        .interactiveDismissDisabled(isSubmitting)
     }
     
     private func submitForm() {

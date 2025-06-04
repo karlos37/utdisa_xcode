@@ -4,34 +4,34 @@ struct TeamRosterView: View {
     @State private var teamMembers: [TeamMember] = [
         // Executive Board
         TeamMember(
-            name: "Vedansh Surjan",
+            name: "Pranav Vishnuvajjhula",
             position: "President",
-            email: "vedansh.surjan@utdallas.edu",
+            email: "pranav.vishnuvajjhula@utdallas.edu",
             bio: "Leading UTD's Indian Students Association"
         ),
         TeamMember(
-            name: "Pranav Vishnuvajjhula",
+            name: "Teeya Kapur",
             position: "Vice President",
-            email: "pranav.vishnuvajjhula@utdallas.edu",
+            email: "teeya.kapur@utdallas.edu",
             bio: "Supporting ISA's mission and initiatives"
         ),
         TeamMember(
-            name: "Shibani Kumar",
+            name: "Jay Tarde",
             position: "General Secretary",
-            email: "shibani.kumar@utdallas.edu",
+            email: "jay.tarde@utdallas.edu",
             bio: "Managing ISA's administrative affairs"
         ),
         TeamMember(
-            name: "Teeya Kapur",
+            name: "Nimanshu Jain",
             position: "Treasurer",
-            email: "teeya.kapur@utdallas.edu",
+            email: "nimanshu.jain@utdallas.edu",
             bio: "Managing ISA's finances"
         ),
         TeamMember(
             name: "Saarth Shetty",
-            position: "Chief of Staff",
+            position: "Public Relations Officer",
             email: "saarth.shetty@utdallas.edu",
-            bio: "Coordinating ISA's operations"
+            bio: "Managing public relations and communications"
         ),
         
         // Officers
@@ -48,7 +48,7 @@ struct TeamRosterView: View {
             bio: "Coordinating dance events and performances"
         ),
         TeamMember(
-            name: "Mohammad",
+            name: "Mohammed Zumar Ali",
             position: "Music Officer",
             email: "mohammad.isa@utdallas.edu",
             bio: "Managing musical events and performances"
@@ -84,12 +84,6 @@ struct TeamRosterView: View {
             bio: "Organizing sports events and tournaments"
         ),
         TeamMember(
-            name: "Aakanksha Balakrishna",
-            position: "Public Relations Officer",
-            email: "aakanksha.balakrishna@utdallas.edu",
-            bio: "Managing public relations and communications"
-        ),
-        TeamMember(
             name: "Mrunal Bhagyawant",
             position: "Community Manager",
             email: "mrunal.bhagyawant@utdallas.edu",
@@ -116,27 +110,15 @@ struct TeamRosterView: View {
         
         // Events and Logistics Team
         TeamMember(
-            name: "Nimanshu Jain",
-            position: "Events & Logistics Officer",
-            email: "nimanshu.jain@utdallas.edu",
-            bio: "Coordinating ISA events and logistics"
-        ),
-        TeamMember(
-            name: "Parag Garg",
-            position: "Events & Logistics Officer",
-            email: "parag.garg@utdallas.edu",
-            bio: "Coordinating ISA events and logistics"
-        ),
-        TeamMember(
             name: "Gaurica Desai",
             position: "Events & Logistics Officer",
             email: "gaurica.desai@utdallas.edu",
             bio: "Coordinating ISA events and logistics"
         ),
         TeamMember(
-            name: "Jay Tarde",
+            name: "Parag Garg",
             position: "Events & Logistics Officer",
-            email: "jay.tarde@utdallas.edu",
+            email: "parag.garg@utdallas.edu",
             bio: "Coordinating ISA events and logistics"
         )
     ]
@@ -165,7 +147,7 @@ struct TeamRosterView: View {
                         TeamSection(
                             title: "Executive Board",
                             members: teamMembers.filter { 
-                                ["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position)
+                                ["President", "Vice President", "General Secretary", "Treasurer", "Public Relations Officer"].contains($0.position)
                             }
                         )
                         
@@ -173,7 +155,7 @@ struct TeamRosterView: View {
                         TeamSection(
                             title: "Officers",
                             members: teamMembers.filter {
-                                !["President", "Vice President", "General Secretary", "Treasurer", "Chief of Staff"].contains($0.position) &&
+                                !["President", "Vice President", "General Secretary", "Treasurer", "Public Relations Officer"].contains($0.position) &&
                                 !$0.position.contains("Events & Logistics")
                             }
                         )

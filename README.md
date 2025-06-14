@@ -37,6 +37,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-UTD Indian Students Association - [isa@utdallas.edu](mailto:isa@utdallas.edu)
+UTD Indian Students Association - [utd.isa@utdallas.edu](mailto:utd.isa@utdallas.edu)
 
 Project Link: [https://github.com/utdisa/ios-app](https://github.com/utdisa/ios-app) 

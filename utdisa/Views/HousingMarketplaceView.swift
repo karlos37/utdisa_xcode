@@ -264,7 +264,7 @@ struct HousingListingCard: View {
                         Image(systemName: "trash")
                             .foregroundColor(.red)
                             .padding(8)
-                            .background(Color(.systemGray6))
+                            .background(Color.white)
                             .clipShape(Circle())
                     }
                 }

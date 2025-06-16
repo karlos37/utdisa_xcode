@@ -12,9 +12,9 @@ struct ISATheme {
     static let deepSaffron = Color(red: 229/255, green: 110/255, blue: 16/255)
     static let spiceRed = Color(red: 193/255, green: 57/255, blue: 43/255)
     
-    // Background Colors
-    static let primaryBackground = Color(.systemBackground)
-    static let secondaryBackground = Color(.secondarySystemBackground)
+    // Background Colors - Always white, independent of system theme
+    static let primaryBackground = Color.white
+    static let secondaryBackground = Color(red: 248/255, green: 248/255, blue: 248/255) // Very light gray
     static let accentBackground = Color(red: 253/255, green: 247/255, blue: 237/255) // Soft cream color
     
     // Gradients
@@ -54,7 +54,7 @@ struct ISATheme {
         
         static func background(_ isSelected: Bool = false) -> some View {
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(isSelected ? accentBackground : primaryBackground)
+                .fill(isSelected ? accentBackground : Color.white)
                 .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: 2)
         }
     }

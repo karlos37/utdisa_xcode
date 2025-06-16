@@ -60,7 +60,7 @@ struct LoginView: View {
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white)
                         .cornerRadius(10)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
@@ -68,7 +68,7 @@ struct LoginView: View {
                         )
                     SecureField("Password", text: $password)
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white)
                         .cornerRadius(10)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
